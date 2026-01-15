@@ -8,7 +8,7 @@ import (
 )
 
 type Config struct {
-	Port string
+	Port        string
 	CORSOrigins []string
 
 	GithubToken string
@@ -19,7 +19,7 @@ type Config struct {
 
 	RequestTimeout time.Duration
 
-	LogLevel string
+	LogLevel  string
 	LogFormat string
 }
 
@@ -31,18 +31,18 @@ func Load() *Config {
 	}
 
 	return &Config{
-		Port:          getEnv("PORT", "8080"),
-		CORSOrigins:   corsOrigins,
-		GithubToken:   os.Getenv("GITHUB_TOKEN"),
-		RateLimitRPS:  getEnvAsInt("RATE_LIMIT_RPS", 10),
-		CacheTTL:      getEnvAsDuration("CACHE_TTL", 5*time.Minute),
+		Port:           getEnv("PORT", "8080"),
+		CORSOrigins:    corsOrigins,
+		GithubToken:    os.Getenv("GITHUB_TOKEN"),
+		RateLimitRPS:   getEnvAsInt("RATE_LIMIT_RPS", 10),
+		CacheTTL:       getEnvAsDuration("CACHE_TTL", 5*time.Minute),
 		RequestTimeout: getEnvAsDuration("REQUEST_TIMEOUT", 10*time.Second),
-		LogLevel:      getEnv("LOG_LEVEL", "info"),
-		LogFormat:     getEnv("LOG_FORMAT", "json"),
+		LogLevel:       getEnv("LOG_LEVEL", "info"),
+		LogFormat:      getEnv("LOG_FORMAT", "json"),
 	}
 }
 
-//helper functions
+// helper functions
 func getEnv(key, defaultValue string) string {
 	if value, exists := os.LookupEnv(key); exists {
 		return value
