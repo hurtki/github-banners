@@ -1,0 +1,66 @@
+version: '3.8'
+services:
+  # api service
+  api:
+    build: ./api/
+    image: api-service
+    container_name: api-service
+    restart: always
+    networks:
+      - banners-net
+      - api-net
+      - kafka-net
+    depends_on:
+      - api-psgr
+  # api service's Postgres database
+  api-psgr:
+    image: postgres:15
+    container_name: api-psgr
+    networks:
+      - api-net
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+  # one instance of rendere service
+  renderer:
+    build: ./renderer/
+    image: renderer
+    container_name: renderer
+    networks:
+      - banners-net
+      - kafka-net
+  # storage service
+  storage:
+    build: ./storage/
+    container_name: storage
+    networks:
+      - banners-net
+  # Kafka's zookeeper service
+  zookeeper:
+    networks:
+      - kafka-net
+    image: wurstmeister/zookeeper
+    container_name: zookeeper
+  # Kafka service
+  kafka:
+    image: wurstmeister/kafka
+    container_name: kafka
+    networks:
+      - kafka-net
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    depends_on:
+      - zookeeper
+volumes:
+  pgdata:
+    name: postgres_db_crud
+networks:
+  api-net:
+    driver: bridge
+  banners-net:
+    driver: bridge
+  kafka-net:
+    driver: bridge
