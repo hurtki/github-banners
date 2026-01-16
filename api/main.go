@@ -1,71 +1,48 @@
 package main
 
 import (
-	"context"
-	"fmt"
-	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
-	"time"
 
 	"github.com/hurtki/github-banners/api/internal/cache"
 	"github.com/hurtki/github-banners/api/internal/config"
+	"github.com/hurtki/github-banners/api/internal/domain"
 	"github.com/hurtki/github-banners/api/internal/github"
+	infraGithub "github.com/hurtki/github-banners/api/internal/infrastructure/github"
+	"github.com/hurtki/github-banners/api/internal/infrastructure/server"
 	log "github.com/hurtki/github-banners/api/internal/logger"
+	"github.com/hurtki/github-banners/api/internal/service"
 )
 
 func main() {
+	// Load configuration
 	cfg := config.Load()
 
+	// Setup logger
 	logger := log.NewLogger(cfg.LogLevel, cfg.LogFormat)
-	logger.Info("Starting Github Stats API")
+	logger.Info("Starting GitHub Stats API")
 
+	// Create in-memory cache
 	memoryCache := cache.NewCache(cfg.CacheTTL)
 
-	githubConfig := &github.ServiceConfig{
-		CacheTTL: cfg.CacheTTL,
+	// Create service configuration
+	serviceConfig := &domain.ServiceConfig{
+		CacheTTL:       cfg.CacheTTL,
 		RequestTimeout: cfg.RequestTimeout,
 	}
 
-	githubService := github.NewService(cfg.GithubToken, memoryCache, githubConfig)
+	// Create GitHub fetcher (infrastructure layer)
+	githubFetcher := infraGithub.NewFetcher(cfg.GithubToken, serviceConfig)
 
-	handler := github.NewHandler(cfg, logger, githubService)
+	// Create stats service (domain service with cache)
+	statsService := service.NewStatsService(githubFetcher, memoryCache)
 
-	server := &http.Server {
-		Addr: fmt.Sprintf(":%s", cfg.Port),
-		Handler: handler, 
-		ReadTimeout: 10*time.Second,
-		WriteTimeout: 30*time.Second,
-		IdleTimeout: 60*time.Second,
-	}
+	// Create HTTP handler
+	handler := github.NewHandler(cfg, logger, statsService)
 
-	//graceful shutdown
-	done := make(chan bool)
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
-
-	go func() {
-		<-quit
-		logger.Info("Shutting down server")
-
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
-
-		if err := server.Shutdown(ctx); err != nil {
-			logger.Error("Could not gracefully shutdown server", "error", err)
-		}
-
-		close(done)
-	}()
-
-	//start server
-	logger.Info("Server is ready to handle requests", "port", cfg.Port)
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed{
-		logger.Error("Could not listen on port", "port", cfg.Port, "error", err)
+	// Create and start HTTP server
+	srv := server.New(cfg, handler, logger)
+	if err := srv.Start(); err != nil {
+		logger.Error("Server error", "error", err)
 		os.Exit(1)
 	}
-
-	<-done
-	logger.Info("Server stopped")
 }

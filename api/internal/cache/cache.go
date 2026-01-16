@@ -1,14 +1,15 @@
-package github
+package cache
 
 import (
 	"time"
 
+	"github.com/hurtki/github-banners/api/internal/domain"
 	"github.com/patrickmn/go-cache"
 )
 
 type Cache interface {
-	Get(username string) (*UserStats, bool)
-	Set(username string, stats *UserStats)
+	Get(username string) (*domain.UserStats, bool)
+	Set(username string, stats *domain.UserStats)
 	Delete(username string)
 }
 
@@ -22,14 +23,14 @@ func NewCache(defaultTTL time.Duration) Cache {
 	}
 }
 
-func (c *MemoryCache) Get(username string) (*UserStats, bool) {
+func (c *MemoryCache) Get(username string) (*domain.UserStats, bool) {
 	if item, found := c.cache.Get(username); found {
-		return item.(*UserStats), true
+		return item.(*domain.UserStats), true
 	}
 	return nil, false
 }
 
-func (c *MemoryCache) Set(username string, stats *UserStats) {
+func (c *MemoryCache) Set(username string, stats *domain.UserStats) {
 	c.cache.Set(username, stats, cache.DefaultExpiration)
 }
 

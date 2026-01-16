@@ -3,12 +3,13 @@ package config
 import (
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
 type Config struct {
 	Port string
-	CORSOrigin string
+	CORSOrigins []string
 
 	GithubToken string
 
@@ -23,9 +24,15 @@ type Config struct {
 }
 
 func Load() *Config {
+	corsOrigin := getEnv("CORS_ORIGIN", "*")
+	corsOrigins := strings.Split(corsOrigin, ",")
+	for i := range corsOrigins {
+		corsOrigins[i] = strings.TrimSpace(corsOrigins[i])
+	}
+
 	return &Config{
 		Port:          getEnv("PORT", "8080"),
-		CORSOrigin:    getEnv("CORS_ORIGIN", "*"),
+		CORSOrigins:   corsOrigins,
 		GithubToken:   os.Getenv("GITHUB_TOKEN"),
 		RateLimitRPS:  getEnvAsInt("RATE_LIMIT_RPS", 10),
 		CacheTTL:      getEnvAsDuration("CACHE_TTL", 5*time.Minute),
