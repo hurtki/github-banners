@@ -24,7 +24,7 @@ type Config struct {
 }
 
 func Load() *Config {
-	corsOrigin := getEnv("CORS_ORIGIN", "*")
+	corsOrigin := getEnv("CORS_ORIGINS", "*")
 	corsOrigins := strings.Split(corsOrigin, ",")
 	for i := range corsOrigins {
 		corsOrigins[i] = strings.TrimSpace(corsOrigins[i])
