@@ -44,8 +44,8 @@ func (f *Fetcher) FetchUser(ctx context.Context, username string) (*github.User,
 func (f *Fetcher) FetchRepositories(ctx context.Context, username string) ([]*github.Repository, error) {
 	var allRepos []*github.Repository
 	opts := &github.RepositoryListByUserOptions{
-		Type: "owner",
-		Sort: "updated",
+		Type:        "owner",
+		Sort:        "updated",
 		ListOptions: github.ListOptions{PerPage: 100},
 	}
 

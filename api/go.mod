@@ -8,4 +8,7 @@ require (
 	golang.org/x/oauth2 v0.34.0
 )
 
-require github.com/google/go-querystring v1.1.0 // indirect
+require (
+	github.com/go-chi/chi/v5 v5.2.4 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
+)
