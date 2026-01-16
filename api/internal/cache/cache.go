@@ -8,8 +8,8 @@ import (
 )
 
 type Cache interface {
-	Get(username string) (*domain.UserStats, bool)
-	Set(username string, stats *domain.UserStats)
+	Get(username string) (*domain.GithubUserStats, bool)
+	Set(username string, stats *domain.GithubUserStats)
 	Delete(username string)
 }
 
@@ -23,14 +23,14 @@ func NewCache(defaultTTL time.Duration) Cache {
 	}
 }
 
-func (c *MemoryCache) Get(username string) (*domain.UserStats, bool) {
+func (c *MemoryCache) Get(username string) (*domain.GithubUserStats, bool) {
 	if item, found := c.cache.Get(username); found {
-		return item.(*domain.UserStats), true
+		return item.(*domain.GithubUserStats), true
 	}
 	return nil, false
 }
 
-func (c *MemoryCache) Set(username string, stats *domain.UserStats) {
+func (c *MemoryCache) Set(username string, stats *domain.GithubUserStats) {
 	c.cache.Set(username, stats, cache.DefaultExpiration)
 }
 

@@ -32,7 +32,7 @@ func NewFetcher(token string, config *domain.ServiceConfig) *Fetcher {
 }
 
 // FetchUser fetches the user data from GitHub
-func (f *Fetcher) FetchUser(ctx context.Context, username string) (*github.User, error) {
+func (f *Fetcher) fetchUser(ctx context.Context, username string) (*github.User, error) {
 	ctx, cancel := context.WithTimeout(ctx, f.config.RequestTimeout)
 	defer cancel()
 
@@ -41,7 +41,7 @@ func (f *Fetcher) FetchUser(ctx context.Context, username string) (*github.User,
 }
 
 // FetchRepositories fetches all repositories for a user (paginated)
-func (f *Fetcher) FetchRepositories(ctx context.Context, username string) ([]*github.Repository, error) {
+func (f *Fetcher) fetchRepositories(ctx context.Context, username string) ([]*github.Repository, error) {
 	var allRepos []*github.Repository
 	opts := &github.RepositoryListByUserOptions{
 		Type:        "owner",
@@ -64,21 +64,50 @@ func (f *Fetcher) FetchRepositories(ctx context.Context, username string) ([]*gi
 }
 
 // FetchUserStats fetches user and repositories together
-func (f *Fetcher) FetchUserStats(ctx context.Context, username string) (*domain.UserStats, error) {
-	user, err := f.FetchUser(ctx, username)
+func (f *Fetcher) FetchUserData(ctx context.Context, username string) (*domain.GithubUserData, error) {
+	user, err := f.fetchUser(ctx, username)
 	if err != nil {
 		return nil, err
 	}
 
-	repos, err := f.FetchRepositories(ctx, username)
+	repos, err := f.fetchRepositories(ctx, username)
 	if err != nil {
 		return nil, err
 	}
+	domainRepos := make([]domain.GithubRepository, len(repos))
+	for i := range len(repos) {
+		if repos[i] == nil {
+			continue
+		}
+		var pushedAt *time.Time = nil
+		var updatedAt *time.Time = nil
+		if repos[i].PushedAt != nil {
+			pushedAt = repos[i].PushedAt.GetTime()
+		}
+		if repos[i].UpdatedAt != nil {
+			updatedAt = repos[i].UpdatedAt.GetTime()
+		}
 
-	return &domain.UserStats{
-		User:         user,
-		Repositories: repos,
-		FetchedAt:    time.Now(),
-		Cached:       false,
+		domainRepos[i] = domain.GithubRepository{
+			ID:            repos[i].ID,
+			OwnerUsername: repos[i].GetOwner().GetLogin(),
+			PushedAt:      pushedAt,
+			UpdatedAt:     updatedAt,
+			Language:      repos[i].Language,
+			StarsCount:    repos[i].GetStargazersCount(),
+			Fork:          repos[i].GetFork(),
+			ForksCount:    repos[i].GetForksCount(),
+		}
+	}
+
+	return &domain.GithubUserData{
+		Username:     user.Login,
+		Name:         user.Name,
+		Company:      user.Company,
+		Location:     user.Location,
+		PublicRepos:  user.PublicRepos,
+		Followers:    user.Followers,
+		Following:    user.Following,
+		Repositories: domainRepos,
 	}, nil
 }
