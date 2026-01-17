@@ -5,7 +5,6 @@ import (
 )
 
 type GithubRepository struct {
-	ID            *int64
 	OwnerUsername string
 	PushedAt      *time.Time
 	UpdatedAt     *time.Time
@@ -16,16 +15,16 @@ type GithubRepository struct {
 }
 
 type GithubUserData struct {
-	Username     *string
+	Username     string
 	Name         *string
 	Company      *string
 	Location     *string
 	Bio          *string
-	PublicRepos  *int
-	Followers    *int
-	Following    *int
+	PublicRepos  int
+	Followers    int
+	Following    int
 	Repositories []GithubRepository
-	FetchedAt    time.Time `json:"fetched_at"`
+	FetchedAt    time.Time
 }
 
 type GithubUserStats struct {

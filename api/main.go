@@ -7,11 +7,11 @@ import (
 	"github.com/hurtki/github-banners/api/internal/cache"
 	"github.com/hurtki/github-banners/api/internal/config"
 	"github.com/hurtki/github-banners/api/internal/domain"
+	"github.com/hurtki/github-banners/api/internal/domain/services"
 	"github.com/hurtki/github-banners/api/internal/handlers"
 	infraGithub "github.com/hurtki/github-banners/api/internal/infrastructure/github"
 	"github.com/hurtki/github-banners/api/internal/infrastructure/server"
 	log "github.com/hurtki/github-banners/api/internal/logger"
-	"github.com/hurtki/github-banners/api/internal/service"
 )
 
 func main() {
@@ -34,7 +34,7 @@ func main() {
 	githubFetcher := infraGithub.NewFetcher(cfg.GithubToken, serviceConfig)
 
 	// Create stats service (domain service with cache)
-	statsService := service.NewStatsService(githubFetcher, memoryCache)
+	statsService := services.NewStatsService(githubFetcher, memoryCache)
 
 	router := chi.NewRouter()
 

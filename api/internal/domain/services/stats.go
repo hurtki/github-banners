@@ -1,4 +1,4 @@
-package service
+package services
 
 import (
 	"context"
@@ -14,6 +14,8 @@ type StatsService struct {
 }
 
 type GithubStatsRepo interface {
+	GetUserData(username string) (domain.GithubUserData, error)
+	UpdateUserData(userData domain.GithubUserData) error
 }
 
 func NewStatsService(fetcher *github.Fetcher, cache cache.Cache) *StatsService {
