@@ -3,16 +3,16 @@ package handlers
 import (
 	"net/http"
 
+	"github.com/hurtki/github-banners/api/internal/domain/services"
 	log "github.com/hurtki/github-banners/api/internal/logger"
-	"github.com/hurtki/github-banners/api/internal/service"
 )
 
 type BannersHandler struct {
 	logger       log.Logger
-	statsService *service.StatsService
+	statsService *services.StatsService
 }
 
-func NewBannersHandler(logger log.Logger, statsService *service.StatsService) *BannersHandler {
+func NewBannersHandler(logger log.Logger, statsService *services.StatsService) *BannersHandler {
 	return &BannersHandler{
 		logger:       logger.With("service", "banners handler"),
 		statsService: statsService,

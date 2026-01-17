@@ -2,19 +2,32 @@ package domain
 
 import (
 	"time"
-
-	"github.com/google/go-github/v81/github"
 )
 
-type UserStats struct {
-	User         *github.User         `json:"user"`
-	Repositories []*github.Repository `json:"repositories,omitempty"`
-	Stats        Stats                `json:"stats"`
-	FetchedAt    time.Time            `json:"fetched_at"`
-	Cached       bool                 `json:"cached,omitempty"`
+type GithubRepository struct {
+	OwnerUsername string
+	PushedAt      *time.Time
+	UpdatedAt     *time.Time
+	Language      *string
+	StarsCount    int
+	Fork          bool
+	ForksCount    int
 }
 
-type Stats struct {
+type GithubUserData struct {
+	Username     string
+	Name         *string
+	Company      *string
+	Location     *string
+	Bio          *string
+	PublicRepos  int
+	Followers    int
+	Following    int
+	Repositories []GithubRepository
+	FetchedAt    time.Time
+}
+
+type GithubUserStats struct {
 	TotalRepos    int            `json:"totalRepos"`
 	OriginalRepos int            `json:"originalRepos"`
 	ForkedRepos   int            `json:"forkedRepos"`

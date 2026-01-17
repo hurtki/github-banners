@@ -1,4 +1,4 @@
-package service
+package services
 
 import (
 	"context"
@@ -13,6 +13,12 @@ type StatsService struct {
 	cache   cache.Cache
 }
 
+type GithubStatsRepo interface {
+	GetUserData(username string) (domain.GithubUserData, error)
+	UpdateUserData(userData domain.GithubUserData) error
+	GetAllUsernames() ([]string, error)
+}
+
 func NewStatsService(fetcher *github.Fetcher, cache cache.Cache) *StatsService {
 	return &StatsService{
 		fetcher: fetcher,
@@ -20,34 +26,33 @@ func NewStatsService(fetcher *github.Fetcher, cache cache.Cache) *StatsService {
 	}
 }
 
-// GetUserStats returns user stats with caching
-func (s *StatsService) GetUserStats(ctx context.Context, username string) (*domain.UserStats, error) {
-	// checking cache first
+// GetUserStats returns User Stats with caching
+func (s *StatsService) GetUserStats(ctx context.Context, username string) (*domain.GithubUserStats, error) {
+	// checking cache for stats
 	if cachedStats, found := s.cache.Get(username); found {
-		cachedStats.Cached = true
 		return cachedStats, nil
 	}
 
-	stats, err := s.fetcher.FetchUserStats(ctx, username)
+	userData, err := s.fetcher.FetchUserData(ctx, username)
 	if err != nil {
 		return nil, err
 	}
 
-	//calculating status using the domain logic
-	stats.Stats = domain.CalculateStats(stats.Repositories)
+	//calculating stats from data using the domain logic
+	stats := domain.CalculateStats(userData.Repositories)
 
-	// Cache it
-	go s.cache.Set(username, stats)
+	// Caching it
+	go s.cache.Set(username, &stats)
 
-	return stats, nil
+	return &stats, nil
 }
 
-func (s *StatsService) GetMultipleUsers(ctx context.Context, usernames []string) (map[string]*domain.UserStats, error) {
-	result := make(map[string]*domain.UserStats)
+func (s *StatsService) GetMultipleUsers(ctx context.Context, usernames []string) (map[string]*domain.GithubUserStats, error) {
+	result := make(map[string]*domain.GithubUserStats)
 	errChan := make(chan error, len(usernames))
 	statsChan := make(chan struct {
 		username string
-		stats    *domain.UserStats
+		stats    *domain.GithubUserStats
 	}, len(usernames))
 
 	for _, username := range usernames {
@@ -59,12 +64,12 @@ func (s *StatsService) GetMultipleUsers(ctx context.Context, usernames []string)
 			}
 			statsChan <- struct {
 				username string
-				stats    *domain.UserStats
+				stats    *domain.GithubUserStats
 			}{username: user, stats: stats}
 		}(username)
 	}
 
-	for i := 0; i < len(usernames); i++ {
+	for range usernames {
 		select {
 		case err := <-errChan:
 			_ = err
