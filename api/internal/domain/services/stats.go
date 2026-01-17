@@ -16,6 +16,7 @@ type StatsService struct {
 type GithubStatsRepo interface {
 	GetUserData(username string) (domain.GithubUserData, error)
 	UpdateUserData(userData domain.GithubUserData) error
+	GetAllUsernames() ([]string, error)
 }
 
 func NewStatsService(fetcher *github.Fetcher, cache cache.Cache) *StatsService {

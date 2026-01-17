@@ -108,5 +108,7 @@ func (f *Fetcher) FetchUserData(ctx context.Context, username string) (*domain.G
 		Followers:    user.GetFollowers(),
 		Following:    user.GetFollowing(),
 		Repositories: domainRepos,
+		// sets the FetchedAt field to time when it was fetched
+		FetchedAt: time.Now(),
 	}, nil
 }
