@@ -67,3 +67,7 @@ func getEnvAsDuration(key string, defaultValue time.Duration) time.Duration {
 	}
 	return defaultValue
 }
+
+func getEnvOrPanic(key string) string {
+
+}
