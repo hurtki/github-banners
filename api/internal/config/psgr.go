@@ -10,6 +10,7 @@ type PostgresConfig struct {
 	Password string
 	DBName   string
 	DBHost   string
+	DBPort   string
 }
 
 type ErrLoadPostgresConf struct {
@@ -39,8 +40,8 @@ func LoadPostgres() (*PostgresConfig, error) {
 	err := &ErrLoadPostgresConf{}
 
 	fillUpPostgresConf(
-		[]*string{&conf.User, &conf.Password, &conf.DBName, &conf.DBHost},
-		[]string{"POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DB", "DB_HOST"},
+		[]*string{&conf.User, &conf.Password, &conf.DBName, &conf.DBHost, &conf.DBPort},
+		[]string{"POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DB", "DB_HOST", "PGPORT"},
 		err,
 	)
 
