@@ -14,6 +14,7 @@ type StatsService struct {
 }
 
 type GithubStatsRepo interface {
+	AddUserData(domain.GithubUserData) error
 	GetUserData(username string) (domain.GithubUserData, error)
 	UpdateUserData(userData domain.GithubUserData) error
 	GetAllUsernames() ([]string, error)
