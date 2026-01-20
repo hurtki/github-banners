@@ -1,20 +1,10 @@
 package github_user_data
 
-import (
-	"database/sql"
+import "database/sql"
 
-	"github.com/hurtki/github-banners/api/internal/logger"
-)
-
-type GithubDataPsgrRepo struct {
-	db     *sql.DB
-	logger logger.Logger
-}
-
-func NewGithubDataPsgrRepo(db *sql.DB, logger logger.Logger) (*GithubDataPsgrRepo, error) {
-	repo := &GithubDataPsgrRepo{db: db, logger: logger}
-
-	_, err := repo.db.Exec(`
+// Intialzies table for GithubDataPsgrRepo
+func InitSchema(db *sql.DB) error {
+	_, err := db.Exec(`
 create table if not exists users (
 username     text primary key,
 name         text ,
@@ -42,9 +32,5 @@ constraint fk_repository_owner
 );
 	`)
 
-	if err != nil {
-		return nil, err
-	}
-
-	return repo, nil
+	return err
 }

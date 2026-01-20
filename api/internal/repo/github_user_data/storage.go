@@ -1,12 +1,23 @@
 package github_user_data
 
 import (
+	"database/sql"
 	"fmt"
 	"strings"
 
 	"github.com/hurtki/github-banners/api/internal/domain"
+	"github.com/hurtki/github-banners/api/internal/logger"
 	"github.com/hurtki/github-banners/api/internal/repo"
 )
+
+type GithubDataPsgrRepo struct {
+	db     *sql.DB
+	logger logger.Logger
+}
+
+func NewGithubDataPsgrRepo(db *sql.DB, logger logger.Logger) *GithubDataPsgrRepo {
+	return &GithubDataPsgrRepo{db: db, logger: logger}
+}
 
 /*
 Interface to implement
@@ -18,9 +29,27 @@ type GithubStatsRepo interface {
 }
 */
 
-func (r *GithubDataPsgrRepo) UpdateUserData(userData domain.GithubUserData) error {
+// UpdateUserData updates user's data (including his repositories) in database using transaction
+func (r *GithubDataPsgrRepo) UpdateUserData(userData domain.GithubUserData) (err error) {
+	fn := "internal.repo.github_user_data.GithubDataPsgrRepo.UpdateUserData"
+	tx, err := r.db.Begin()
+	if err != nil {
+		r.logger.Error("can't start transaction", "source", fn, "err", err)
+		return repo.ErrRepoInternal{
+			Note: err.Error(),
+		}
+	}
+
+	defer func() {
+		// if some error is being returned we will rollback transaction
+		if err != nil {
+			err := tx.Rollback()
+			r.logger.Error("error, when rolling back transaction", "err", err, "source", fn)
+		}
+	}()
+
 	// update of the user table's row
-	res, err := r.db.Exec(`
+	res, err := tx.Exec(`
 	update users
 	set name = $1,
 		company = $2,
@@ -45,7 +74,7 @@ func (r *GithubDataPsgrRepo) UpdateUserData(userData domain.GithubUserData) erro
 
 	// if a new data says that there is not repositories, then delete all existing ones
 	if len(userData.Repositories) == 0 {
-		_, err := r.db.Exec(`
+		_, err := tx.Exec(`
 		delete from repositories
 		where owner_username = $1;
 		`, userData.Username)
@@ -102,7 +131,7 @@ func (r *GithubDataPsgrRepo) UpdateUserData(userData domain.GithubUserData) erro
 	)
 
 	// execute query with collected args
-	_, err = r.db.Exec(query, upsertArgs...)
+	_, err = tx.Exec(query, upsertArgs...)
 
 	if err != nil {
 		return toRepoError(err)
@@ -110,11 +139,9 @@ func (r *GithubDataPsgrRepo) UpdateUserData(userData domain.GithubUserData) erro
 
 	deleteArgs := make([]any, len(userData.Repositories)+1)
 	deleteArgs[0] = userData.Username
-	var (
-		deletePosParams []string
-	)
-
 	reposCount := len(userData.Repositories)
+
+	deletePosParams := make([]string, reposCount)
 
 	// i here iterates on numbers of positional arguments
 	// from 2 (because $1 is used for username in the query) to (repos count + 2)
@@ -137,11 +164,12 @@ func (r *GithubDataPsgrRepo) UpdateUserData(userData domain.GithubUserData) erro
 		);
 	`, strings.Join(deletePosParams, ", "))
 
-	_, err = r.db.Exec(deleteQuery, deleteArgs...)
+	_, err = tx.Exec(deleteQuery, deleteArgs...)
 
 	return toRepoError(err)
 }
 
+// WIP
 func (r *GithubDataPsgrRepo) AddUserData(userData domain.GithubUserData) error {
 	res, err := r.db.Exec(`
 	insert into users (username, name, company, location, bio, publi_repos_count, followers_count, following_count, fetched_at)
@@ -157,8 +185,10 @@ func (r *GithubDataPsgrRepo) AddUserData(userData domain.GithubUserData) error {
 		return repo.ErrNothingChanged
 	}
 
+	return nil
 }
 
+// WIP
 func (r *GithubDataPsgrRepo) GetUserData(username string) (domain.GithubUserData, error) {
 	row := r.db.QueryRow(`
 	select (username, name, company, location, bio, public_repos_count, followers_count, following_count, fetched_at) from users
