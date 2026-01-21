@@ -31,7 +31,7 @@ func getMockAndRepo() (sqlmock.Sqlmock, *GithubDataPsgrRepo) {
 	return mock, repo
 }
 
-func TestStorageAddUserDataSucess(t *testing.T) {
+func TestAddUserDataSucess(t *testing.T) {
 	mock, repo := getMockAndRepo()
 	githubRepo1 := domain.GithubRepository{ID: 123, OwnerUsername: "alex"}
 	githubRepo2 := domain.GithubRepository{ID: 45, OwnerUsername: "alex"}
@@ -67,7 +67,7 @@ func TestStorageAddUserDataSucess(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestStorageAddUserDataAlreadyExistsErrorCheck(t *testing.T) {
+func TestAddUserDataAlreadyExistsErrorCheck(t *testing.T) {
 	mock, repo := getMockAndRepo()
 	githubRepo := domain.GithubRepository{ID: 123, OwnerUsername: "alex"}
 	userData := domain.GithubUserData{
@@ -88,7 +88,7 @@ func TestStorageAddUserDataAlreadyExistsErrorCheck(t *testing.T) {
 	require.Equal(t, repo.AddUserData(userData), &repoerr.ErrConflictValue{})
 }
 
-func TestStorageAddUserDataNoRepositoriesSuccess(t *testing.T) {
+func TestAddUserDataNoRepositoriesSuccess(t *testing.T) {
 	mock, repo := getMockAndRepo()
 	userData := domain.GithubUserData{
 		Username:     "alex",
@@ -108,7 +108,7 @@ func TestStorageAddUserDataNoRepositoriesSuccess(t *testing.T) {
 	require.Equal(t, repo.AddUserData(userData), nil)
 }
 
-func TestStorageUpdateUserDataSuccess(t *testing.T) {
+func TestUpdateUserDataSuccess(t *testing.T) {
 	mock, repo := getMockAndRepo()
 	githubRepo := domain.GithubRepository{ID: 123, OwnerUsername: "alex"}
 	userData := domain.GithubUserData{
@@ -158,4 +158,35 @@ func TestStorageUpdateUserDataSuccess(t *testing.T) {
 
 	err := repo.UpdateUserData(userData)
 	require.NoError(t, err)
+}
+
+func TestGetAllUsernamesSuccess(t *testing.T) {
+	mock, repo := getMockAndRepo()
+	usernames := []string{"alex", "hurtki", "forge", "higor54"}
+
+	usernameRows := sqlmock.NewRows([]string{"username"})
+	for _, un := range usernames {
+		usernameRows.AddRow(un)
+	}
+	mock.ExpectQuery(`
+	select username from users;
+	`).WillReturnRows(usernameRows)
+
+	resUsernames, err := repo.GetAllUsernames()
+	require.NoError(t, err)
+
+	require.Equal(t, usernames, resUsernames)
+}
+
+func TestGetAllUsernamesNoUsernames(t *testing.T) {
+	mock, repo := getMockAndRepo()
+
+	mock.ExpectQuery(`
+	select username from users;
+	`).WillReturnRows(sqlmock.NewRows([]string{"username"}))
+
+	resUsernames, err := repo.GetAllUsernames()
+	require.NoError(t, err)
+
+	require.Equal(t, []string{}, resUsernames)
 }
