@@ -1,5 +1,13 @@
 package github_user_data
 
+import (
+	"fmt"
+	"strings"
+
+	"github.com/hurtki/github-banners/api/internal/domain"
+	"github.com/hurtki/github-banners/api/internal/repo"
+)
+
 func (r *GithubDataPsgrRepo) AddUserData(userData domain.GithubUserData) error {
 	fn := "internal.repo.github_user_data.GithubDataPsgrRepo.AddUserData"
 	tx, err := r.db.Begin()
@@ -61,17 +69,31 @@ func (r *GithubDataPsgrRepo) AddUserData(userData domain.GithubUserData) error {
 			repo.Fork,
 			repo.ForksCount,
 		)
-		i++
+		i += 8
 	}
 
 	// inserting positional arguments into query
+	// use of upsert, beacuse of edge case:
+	/*
+		user1 had repository and used our service
+		user1 transfered repository to user2
+		user2 started using our service before user1's info was update
+		we are getting constraint error on insert because user1's repo is still in database and we are inserting with same github_id
+	*/
 	query := fmt.Sprintf(`
 	insert into repositories (github_id, owner_username, pushed_at, updated_at, language, stars_count, is_fork, forks_count)
-	values (%s);
+	values (%s)
+	on conflict (github_id) do update set
+		owner_username = excluded.owner_username,
+		pushed_at      = excluded.pushed_at,
+		updated_at     = excluded.updated_at,
+		language       = excluded.language,
+		stars_count    = excluded.stars_count,
+		is_fork        = excluded.is_fork,
+		forks_count    = excluded.forks_count;
 	`, strings.Join(posParams, ", "))
 
 	_, err = tx.Exec(query, args...)
 
 	return toRepoError(err)
 }
-

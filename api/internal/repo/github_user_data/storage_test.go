@@ -33,11 +33,12 @@ func getMockAndRepo() (sqlmock.Sqlmock, *GithubDataPsgrRepo) {
 
 func TestStorageAddUserDataSucess(t *testing.T) {
 	mock, repo := getMockAndRepo()
-	githubRepo := domain.GithubRepository{ID: 123, OwnerUsername: "alex"}
+	githubRepo1 := domain.GithubRepository{ID: 123, OwnerUsername: "alex"}
+	githubRepo2 := domain.GithubRepository{ID: 45, OwnerUsername: "alex"}
 	userData := domain.GithubUserData{
 		Username:     "alex",
 		FetchedAt:    time.Now(),
-		Repositories: []domain.GithubRepository{githubRepo},
+		Repositories: []domain.GithubRepository{githubRepo1, githubRepo2},
 	}
 
 	mock.ExpectBegin()
@@ -49,8 +50,16 @@ func TestStorageAddUserDataSucess(t *testing.T) {
 
 	mock.ExpectExec(`
 	insert into repositories (github_id, owner_username, pushed_at, updated_at, language, stars_count, is_fork, forks_count)
-	values (($1, $2, $3, $4, $5, $6, $7, $8));
-	`).WithArgs(githubRepo.ID, githubRepo.OwnerUsername, githubRepo.PushedAt, githubRepo.UpdatedAt, githubRepo.Language, githubRepo.StarsCount, githubRepo.Fork, githubRepo.ForksCount).WillReturnResult(sqlmock.NewResult(1, 1))
+	values (($1, $2, $3, $4, $5, $6, $7, $8), ($9, $10, $11, $12, $13, $14, $15, $16))
+	on conflict (github_id) do update set
+		owner_username = excluded.owner_username,
+		pushed_at      = excluded.pushed_at,
+		updated_at     = excluded.updated_at,
+		language       = excluded.language,
+		stars_count    = excluded.stars_count,
+		is_fork        = excluded.is_fork,
+		forks_count    = excluded.forks_count;
+	`).WithArgs(githubRepo1.ID, githubRepo1.OwnerUsername, githubRepo1.PushedAt, githubRepo1.UpdatedAt, githubRepo1.Language, githubRepo1.StarsCount, githubRepo1.Fork, githubRepo1.ForksCount, githubRepo2.ID, githubRepo2.OwnerUsername, githubRepo2.PushedAt, githubRepo2.UpdatedAt, githubRepo2.Language, githubRepo2.StarsCount, githubRepo2.Fork, githubRepo2.ForksCount).WillReturnResult(sqlmock.NewResult(1, 1))
 
 	mock.ExpectCommit()
 

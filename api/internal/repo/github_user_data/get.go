@@ -1,5 +1,11 @@
 package github_user_data
 
+import (
+	"context"
+	"database/sql"
+
+	"github.com/hurtki/github-banners/api/internal/domain"
+)
 
 func (r *GithubDataPsgrRepo) GetUserData(username string) (domain.GithubUserData, error) {
 	fn := "internal.repo.github_user_data.GithubDataPsgrRepo.GetUserData"
