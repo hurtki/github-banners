@@ -22,7 +22,9 @@ func (r *GithubDataPsgrRepo) AddUserData(userData domain.GithubUserData) error {
 		// if some error is being returned we will rollback transaction
 		if err != nil {
 			err := tx.Rollback()
-			r.logger.Error("error, when rolling back transaction", "err", err, "source", fn)
+			if err != nil {
+				r.logger.Error("error, when rolling back transaction", "err", err, "source", fn)
+			}
 		} else {
 			err = tx.Commit()
 		}
