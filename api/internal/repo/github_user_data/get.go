@@ -5,12 +5,36 @@ import (
 	"database/sql"
 
 	"github.com/hurtki/github-banners/api/internal/domain"
+	"github.com/hurtki/github-banners/api/internal/repo"
 )
 
 func (r *GithubDataPsgrRepo) GetUserData(username string) (domain.GithubUserData, error) {
 	fn := "internal.repo.github_user_data.GithubDataPsgrRepo.GetUserData"
 	// use of RepeatableRead/serializable sql isolation level to select user's data and his repos in same state
 	tx, err := r.db.BeginTx(context.Background(), &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
+	if err != nil {
+		r.logger.Error("can't start transaction", "source", fn, "err", err)
+		return domain.GithubUserData{}, repo.ErrRepoInternal{
+			Note: err.Error(),
+		}
+	}
+
+	defer func() {
+		// if some error is being returned we will rollback transaction
+		if err != nil {
+			rbErr := tx.Rollback()
+			if rbErr != nil {
+				r.logger.Error("error, when rolling back transaction", "err", rbErr, "source", fn)
+			}
+		} else {
+			err = tx.Commit()
+			if err != nil {
+				r.logger.Error("unexpected error, when commiting transaction", "source", fn, "err", err)
+			}
+			// map into ErrRepoInternal
+			err = toRepoError(err)
+		}
+	}()
 
 	row := tx.QueryRow(`
 	select (username, name, company, location, bio, public_repos_count, followers_count, following_count, fetched_at) from users

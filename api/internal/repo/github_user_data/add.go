@@ -8,7 +8,7 @@ import (
 	"github.com/hurtki/github-banners/api/internal/repo"
 )
 
-func (r *GithubDataPsgrRepo) AddUserData(userData domain.GithubUserData) error {
+func (r *GithubDataPsgrRepo) AddUserData(userData domain.GithubUserData) (err error) {
 	fn := "internal.repo.github_user_data.GithubDataPsgrRepo.AddUserData"
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -21,12 +21,17 @@ func (r *GithubDataPsgrRepo) AddUserData(userData domain.GithubUserData) error {
 	defer func() {
 		// if some error is being returned we will rollback transaction
 		if err != nil {
-			err := tx.Rollback()
-			if err != nil {
-				r.logger.Error("error, when rolling back transaction", "err", err, "source", fn)
+			rbErr := tx.Rollback()
+			if rbErr != nil {
+				r.logger.Error("error, when rolling back transaction", "err", rbErr, "source", fn)
 			}
 		} else {
 			err = tx.Commit()
+			if err != nil {
+				r.logger.Error("unexpected error, when commiting transaction", "source", fn, "err", err)
+			}
+			// map into ErrRepoInternal
+			err = toRepoError(err)
 		}
 	}()
 

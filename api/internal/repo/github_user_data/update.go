@@ -22,10 +22,17 @@ func (r *GithubDataPsgrRepo) UpdateUserData(userData domain.GithubUserData) (err
 	defer func() {
 		// if some error is being returned we will rollback transaction
 		if err != nil {
-			err := tx.Rollback()
-			r.logger.Error("error, when rolling back transaction", "err", err, "source", fn)
+			rbErr := tx.Rollback()
+			if rbErr != nil {
+				r.logger.Error("error, when rolling back transaction", "err", rbErr, "source", fn)
+			}
 		} else {
 			err = tx.Commit()
+			if err != nil {
+				r.logger.Error("unexpected error, when commiting transaction", "source", fn, "err", err)
+			}
+			// map into ErrRepoInternal
+			err = toRepoError(err)
 		}
 	}()
 
@@ -76,7 +83,7 @@ func (r *GithubDataPsgrRepo) UpdateUserData(userData domain.GithubUserData) (err
 		nums := make([]any, columnsCount)
 
 		// generating numbers for postional parameters from i to i + columnsCount - 1
-		// for example (1-8, 9-16, 17-4)
+		// for example (1-8, 9-16, 17-24)
 		for j := i; j < i+columnsCount; j++ {
 			nums[j-i] = j
 		}

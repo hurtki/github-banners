@@ -85,7 +85,7 @@ func TestAddUserDataAlreadyExistsErrorCheck(t *testing.T) {
 
 	mock.ExpectRollback()
 
-	require.Equal(t, repo.AddUserData(userData), &repoerr.ErrConflictValue{})
+	require.Equal(t, &repoerr.ErrConflictValue{}, repo.AddUserData(userData))
 }
 
 func TestAddUserDataNoRepositoriesSuccess(t *testing.T) {
@@ -105,7 +105,7 @@ func TestAddUserDataNoRepositoriesSuccess(t *testing.T) {
 
 	mock.ExpectCommit()
 
-	require.Equal(t, repo.AddUserData(userData), nil)
+	require.Equal(t, nil, repo.AddUserData(userData))
 }
 
 func TestUpdateUserDataSuccess(t *testing.T) {
@@ -189,4 +189,39 @@ func TestGetAllUsernamesNoUsernames(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, []string{}, resUsernames)
+}
+
+func TestGetUserDataSuccess(t *testing.T) {
+	mock, repo := getMockAndRepo()
+
+	userData := domain.GithubUserData{Username: "Olivia"}
+	repo1 := domain.GithubRepository{ID: 123, OwnerUsername: userData.Username}
+	repo2 := domain.GithubRepository{ID: 3454, OwnerUsername: userData.Username}
+	userData.Repositories = []domain.GithubRepository{repo1, repo2}
+	userColumns := []string{"username", "name", "company", "location", "bio", "public_repos_count", "followers_count", "following_count", "fetched_at"}
+	githubRepoColumns := []string{"github_id", "owner_username", "pushed_at", "updated_at", "language", "stars_count", "is_fork", "forks_count"}
+
+	githubReposRows := sqlmock.NewRows(githubRepoColumns)
+	for _, githubRepo := range userData.Repositories {
+		githubReposRows.AddRow(githubRepo.ID, githubRepo.OwnerUsername, githubRepo.PushedAt, githubRepo.UpdatedAt, githubRepo.Language, githubRepo.StarsCount, githubRepo.Fork, githubRepo.ForksCount)
+	}
+
+	userRows := sqlmock.NewRows(userColumns)
+	userRows.AddRow(userData.Username, userData.Name, userData.Company, userData.Location, userData.Bio, userData.PublicRepos, userData.Followers, userData.Following, userData.FetchedAt)
+	mock.ExpectBegin()
+
+	mock.ExpectQuery(`
+	select (username, name, company, location, bio, public_repos_count, followers_count, following_count, fetched_at) from users
+	where username = $1;
+	`).WithArgs(userData.Username).WillReturnRows(userRows)
+
+	mock.ExpectQuery(`
+	select (github_id, owner_username, pushed_at, updated_at, language, stars_count, is_fork, forks_count) from repositories
+	where owner_username = $1;
+	`).WithArgs(userData.Username).WillReturnRows(githubReposRows)
+	mock.ExpectCommit()
+
+	resUserData, err := repo.GetUserData(userData.Username)
+	require.NoError(t, err)
+	require.Equal(t, userData, resUserData)
 }
