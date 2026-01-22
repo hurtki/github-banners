@@ -9,7 +9,7 @@ import (
 
 type Cache interface {
 	Get(username string) (*domain.GithubUserStats, bool)
-	Set(username string, stats *domain.GithubUserStats)
+	Set(username string, stats *domain.GithubUserStats, ttl time.Duration)
 	Delete(username string)
 }
 
@@ -30,8 +30,8 @@ func (c *MemoryCache) Get(username string) (*domain.GithubUserStats, bool) {
 	return nil, false
 }
 
-func (c *MemoryCache) Set(username string, stats *domain.GithubUserStats) {
-	c.cache.Set(username, stats, cache.DefaultExpiration)
+func (c *MemoryCache) Set(username string, stats *domain.GithubUserStats, ttl time.Duration) {
+	c.cache.Set(username, stats, ttl)
 }
 
 func (c *MemoryCache) Delete(username string) {

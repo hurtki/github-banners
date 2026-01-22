@@ -34,7 +34,7 @@ func main() {
 	githubFetcher := infraGithub.NewFetcher(cfg.GithubToken, serviceConfig)
 
 	// Create stats service (domain service with cache)
-	statsService := services.NewStatsService(githubFetcher, memoryCache)
+	statsService := services.NewStatsService(githubFetcher, memoryCache, cfg.CacheTTL)
 
 	router := chi.NewRouter()
 

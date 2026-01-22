@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"time"
 
 	"github.com/hurtki/github-banners/api/internal/cache"
 	"github.com/hurtki/github-banners/api/internal/domain"
@@ -11,18 +12,14 @@ import (
 type StatsService struct {
 	fetcher *github.Fetcher
 	cache   cache.Cache
+	ttl     time.Duration
 }
 
-type GithubStatsRepo interface {
-	GetUserData(username string) (domain.GithubUserData, error)
-	UpdateUserData(userData domain.GithubUserData) error
-	GetAllUsernames() ([]string, error)
-}
-
-func NewStatsService(fetcher *github.Fetcher, cache cache.Cache) *StatsService {
+func NewStatsService(fetcher *github.Fetcher, cache cache.Cache, ttl time.Duration) *StatsService {
 	return &StatsService{
 		fetcher: fetcher,
 		cache:   cache,
+		ttl:     ttl,
 	}
 }
 
@@ -42,7 +39,7 @@ func (s *StatsService) GetUserStats(ctx context.Context, username string) (*doma
 	stats := domain.CalculateStats(userData.Repositories)
 
 	// Caching it
-	go s.cache.Set(username, &stats)
+	go s.cache.Set(username, &stats, s.ttl)
 
 	return &stats, nil
 }
