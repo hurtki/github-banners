@@ -1,6 +1,7 @@
 package github_user_data
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -63,7 +64,7 @@ func TestAddUserDataSucess(t *testing.T) {
 
 	mock.ExpectCommit()
 
-	err := repo.AddUserData(userData)
+	err := repo.AddUserData(context.TODO(), userData)
 	require.NoError(t, err)
 }
 
@@ -85,7 +86,7 @@ func TestAddUserDataAlreadyExistsErrorCheck(t *testing.T) {
 
 	mock.ExpectRollback()
 
-	require.Equal(t, &repoerr.ErrConflictValue{}, repo.AddUserData(userData))
+	require.Equal(t, &repoerr.ErrConflictValue{}, repo.AddUserData(context.TODO(), userData))
 }
 
 func TestAddUserDataNoRepositoriesSuccess(t *testing.T) {
@@ -105,7 +106,7 @@ func TestAddUserDataNoRepositoriesSuccess(t *testing.T) {
 
 	mock.ExpectCommit()
 
-	require.Equal(t, nil, repo.AddUserData(userData))
+	require.Equal(t, nil, repo.AddUserData(context.TODO(), userData))
 }
 
 func TestUpdateUserDataSuccess(t *testing.T) {
@@ -133,9 +134,10 @@ func TestUpdateUserDataSuccess(t *testing.T) {
 
 	mock.ExpectExec(`
 	insert into repositories (github_id, owner_username, pushed_at, updated_at, language, stars_count, is_fork, forks_count)
-	values ($1, $2, $3, $4, $5, $6, $7, $8)
+	values (($1, $2, $3, $4, $5, $6, $7, $8))
 	on conflict (github_id)
 	do update set
+	owner_username = excluded.owner_username,
     pushed_at   = excluded.pushed_at,
     updated_at  = excluded.updated_at,
     language    = excluded.language,
@@ -156,7 +158,7 @@ func TestUpdateUserDataSuccess(t *testing.T) {
 
 	mock.ExpectCommit()
 
-	err := repo.UpdateUserData(userData)
+	err := repo.UpdateUserData(context.TODO(), userData)
 	require.NoError(t, err)
 }
 
@@ -172,7 +174,7 @@ func TestGetAllUsernamesSuccess(t *testing.T) {
 	select username from users;
 	`).WillReturnRows(usernameRows)
 
-	resUsernames, err := repo.GetAllUsernames()
+	resUsernames, err := repo.GetAllUsernames(context.TODO())
 	require.NoError(t, err)
 
 	require.Equal(t, usernames, resUsernames)
@@ -185,7 +187,7 @@ func TestGetAllUsernamesNoUsernames(t *testing.T) {
 	select username from users;
 	`).WillReturnRows(sqlmock.NewRows([]string{"username"}))
 
-	resUsernames, err := repo.GetAllUsernames()
+	resUsernames, err := repo.GetAllUsernames(context.TODO())
 	require.NoError(t, err)
 
 	require.Equal(t, []string{}, resUsernames)
@@ -221,7 +223,7 @@ func TestGetUserDataSuccess(t *testing.T) {
 	`).WithArgs(userData.Username).WillReturnRows(githubReposRows)
 	mock.ExpectCommit()
 
-	resUserData, err := repo.GetUserData(userData.Username)
+	resUserData, err := repo.GetUserData(context.TODO(), userData.Username)
 	require.NoError(t, err)
 	require.Equal(t, userData, resUserData)
 }

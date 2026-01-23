@@ -1,9 +1,11 @@
 package github_user_data
 
-func (r *GithubDataPsgrRepo) GetAllUsernames() ([]string, error) {
+import "context"
+
+func (r *GithubDataPsgrRepo) GetAllUsernames(ctx context.Context) ([]string, error) {
 	fn := "internal.repo.github_user_data.GithubDataPsgrRepo.GetAllUsernames"
 
-	rows, err := r.db.Query(`
+	rows, err := r.db.QueryContext(ctx, `
 	select username from users;
 	`)
 

@@ -40,8 +40,13 @@ func LoadPostgres() (*PostgresConfig, error) {
 	err := &ErrLoadPostgresConf{}
 
 	fillUpPostgresConf(
-		[]*string{&conf.User, &conf.Password, &conf.DBName, &conf.DBHost, &conf.DBPort},
-		[]string{"POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DB", "DB_HOST", "PGPORT"},
+		map[string]*string{
+			"POSTGRES_USER":     &conf.User,
+			"POSTGRES_PASSWORD": &conf.Password,
+			"POSTGRES_DB":       &conf.DBName,
+			"DB_HOST":           &conf.DBHost,
+			"PGPORT":            &conf.DBPort,
+		},
 		err,
 	)
 
@@ -49,13 +54,13 @@ func LoadPostgres() (*PostgresConfig, error) {
 }
 
 // fillUpPostgresConf is a helper function to fill up configurration struct and collect all the missing fields
-func fillUpPostgresConf(fields []*string, keys []string, err *ErrLoadPostgresConf) {
-	for i, key := range keys {
-		value, exists := os.LookupEnv(key)
+func fillUpPostgresConf(vars map[string]*string, err *ErrLoadPostgresConf) {
+	for envKey, fieldPtr := range vars {
+		value, exists := os.LookupEnv(envKey)
 		if exists {
-			*fields[i] = value
+			*fieldPtr = value
 		} else {
-			err.AddField(key)
+			err.AddField(envKey)
 		}
 	}
 }

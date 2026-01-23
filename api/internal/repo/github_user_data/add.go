@@ -1,16 +1,15 @@
 package github_user_data
 
 import (
-	"fmt"
-	"strings"
+	"context"
 
 	"github.com/hurtki/github-banners/api/internal/domain"
 	"github.com/hurtki/github-banners/api/internal/repo"
 )
 
-func (r *GithubDataPsgrRepo) AddUserData(userData domain.GithubUserData) (err error) {
+func (r *GithubDataPsgrRepo) AddUserData(ctx context.Context, userData domain.GithubUserData) (err error) {
 	fn := "internal.repo.github_user_data.GithubDataPsgrRepo.AddUserData"
-	tx, err := r.db.Begin()
+	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		r.logger.Error("can't start transaction", "source", fn, "err", err)
 		return repo.ErrRepoInternal{
@@ -18,20 +17,15 @@ func (r *GithubDataPsgrRepo) AddUserData(userData domain.GithubUserData) (err er
 		}
 	}
 
+	commited := false
 	defer func() {
-		// if some error is being returned we will rollback transaction
-		if err != nil {
+		if p := recover(); p != nil {
+			_ = tx.Rollback()
+			panic(p)
+		}
+		if !commited {
 			rbErr := tx.Rollback()
-			if rbErr != nil {
-				r.logger.Error("error, when rolling back transaction", "err", rbErr, "source", fn)
-			}
-		} else {
-			err = tx.Commit()
-			if err != nil {
-				r.logger.Error("unexpected error, when commiting transaction", "source", fn, "err", err)
-			}
-			// map into ErrRepoInternal
-			err = toRepoError(err)
+			r.logger.Error("error occured, when rolling back transaction", "err", rbErr, "source", fn)
 		}
 	}()
 
@@ -47,60 +41,29 @@ func (r *GithubDataPsgrRepo) AddUserData(userData domain.GithubUserData) (err er
 		return toRepoError(err)
 	}
 
-	// before inserting into repositories, check if we are inserting at least one
-	// if not skip
-	if len(userData.Repositories) < 1 {
-		return nil
-	}
+	// Batch/Chunk Repository Upsert (Postgres Limit: 65535 parameters)
+	batchSize := 500
+	for i := 0; i < len(userData.Repositories); i += batchSize {
+		end := min(i+batchSize, len(userData.Repositories))
 
-	var (
-		posParams []string
-		args      []any
-	)
-
-	// building query for inserting repos
-	i := 1
-	for _, repo := range userData.Repositories {
-		tempPosArgs := []string{}
-		for j := i; j < i+8; j++ {
-			tempPosArgs = append(tempPosArgs, fmt.Sprintf("$%d", j))
+		chunk := userData.Repositories[i:end]
+		// inserting positional arguments into query
+		// use of upsert, beacuse of edge case:
+		/*
+			user1 had repository and used our service
+			user1 transfered repository to user2
+			user2 started using our service before user1's info was update
+			we are getting constraint error on insert because user1's repo is still in database and we are inserting with same github_id
+		*/
+		if err := r.upsertRepoBatch(ctx, tx, chunk); err != nil {
+			return toRepoError(err)
 		}
-		posParams = append(posParams, fmt.Sprintf("(%s)", strings.Join(tempPosArgs, ", ")))
-		args = append(args,
-			repo.ID,
-			repo.OwnerUsername,
-			repo.PushedAt,
-			repo.UpdatedAt,
-			repo.Language,
-			repo.StarsCount,
-			repo.Fork,
-			repo.ForksCount,
-		)
-		i += 8
 	}
 
-	// inserting positional arguments into query
-	// use of upsert, beacuse of edge case:
-	/*
-		user1 had repository and used our service
-		user1 transfered repository to user2
-		user2 started using our service before user1's info was update
-		we are getting constraint error on insert because user1's repo is still in database and we are inserting with same github_id
-	*/
-	query := fmt.Sprintf(`
-	insert into repositories (github_id, owner_username, pushed_at, updated_at, language, stars_count, is_fork, forks_count)
-	values (%s)
-	on conflict (github_id) do update set
-		owner_username = excluded.owner_username,
-		pushed_at      = excluded.pushed_at,
-		updated_at     = excluded.updated_at,
-		language       = excluded.language,
-		stars_count    = excluded.stars_count,
-		is_fork        = excluded.is_fork,
-		forks_count    = excluded.forks_count;
-	`, strings.Join(posParams, ", "))
+	if err = tx.Commit(); err != nil {
+		return toRepoError(err)
+	}
+	commited = true
 
-	_, err = tx.Exec(query, args...)
-
-	return toRepoError(err)
+	return nil
 }

@@ -13,11 +13,9 @@ import (
 )
 
 const (
-	// DB_MAX_CONNECTIONS_PERCENT_TO_POSTGRES_MAX - constant is a percent of db connections
-	// from postgres max connections
+	// DB_MAX_CONNECTIONS_PERCENT_TO_POSTGRES_MAX - percent of overall db connections from postgres max connections
 	dbMaxConnectionsPercentToPostgresMax = 70
-	// DB_MAX_IDLE_CONNECTIONS_PERCENT_TO_POSTGRES_MAX - constant is a percent of db idling connections
-	// from postgres max connections
+	// DB_MAX_IDLE_CONNECTIONS_PERCENT_TO_POSTGRES_MAX - percent of db idling connections from postgres max connections
 	dbMaxIdleConnectionsPercentToPostgresMax = 10
 
 	connectionLifeTime           = 5 * time.Minute
@@ -26,7 +24,7 @@ const (
 )
 
 func NewDB(conf *config.PostgresConfig, logger logger.Logger) (*sql.DB, error) {
-	fn := "internal.repo.tasks.GetDb"
+	fn := "internal.infrastructure.db.NewDB"
 
 	logger = logger.With("service", "db-intialization-function")
 
@@ -40,13 +38,14 @@ func NewDB(conf *config.PostgresConfig, logger logger.Logger) (*sql.DB, error) {
 		db, err = sql.Open("pgx", dsn)
 
 		if err != nil {
-			logger.Warn(fmt.Sprintf("Cannot open database(retrying in 1 second), try number: %d/%d", i+1, dataBaseConnectionTriesCount), "source", fn)
+			logger.Warn(fmt.Sprintf("Cannot open database(retrying in %s), try number: %d/%d", retryTimeBetweenTries.String(), i+1, dataBaseConnectionTriesCount), "source", fn)
 			time.Sleep(retryTimeBetweenTries)
 			continue
 		}
 
 		if err := db.Ping(); err != nil {
 			logger.Warn(fmt.Sprintf("Cannot ping database, try number: %d/%d", i+1, dataBaseConnectionTriesCount), "source", fn, "err", err)
+			db.Close()
 			time.Sleep(retryTimeBetweenTries)
 			continue
 		}

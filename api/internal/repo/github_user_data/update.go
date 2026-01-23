@@ -1,6 +1,7 @@
 package github_user_data
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -9,35 +10,29 @@ import (
 )
 
 // UpdateUserData updates user's data (including his repositories) in database using transaction
-func (r *GithubDataPsgrRepo) UpdateUserData(userData domain.GithubUserData) (err error) {
+func (r *GithubDataPsgrRepo) UpdateUserData(ctx context.Context, userData domain.GithubUserData) (err error) {
 	fn := "internal.repo.github_user_data.GithubDataPsgrRepo.UpdateUserData"
-	tx, err := r.db.Begin()
+	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		r.logger.Error("can't start transaction", "source", fn, "err", err)
 		return repo.ErrRepoInternal{
 			Note: err.Error(),
 		}
 	}
-
+	commited := false
 	defer func() {
-		// if some error is being returned we will rollback transaction
-		if err != nil {
+		if p := recover(); p != nil {
+			_ = tx.Rollback()
+			panic(p)
+		}
+		if !commited {
 			rbErr := tx.Rollback()
-			if rbErr != nil {
-				r.logger.Error("error, when rolling back transaction", "err", rbErr, "source", fn)
-			}
-		} else {
-			err = tx.Commit()
-			if err != nil {
-				r.logger.Error("unexpected error, when commiting transaction", "source", fn, "err", err)
-			}
-			// map into ErrRepoInternal
-			err = toRepoError(err)
+			r.logger.Error("error occured, when rolling back transaction", "err", rbErr, "source", fn)
 		}
 	}()
 
 	// update of the user table's row
-	res, err := tx.Exec(`
+	res, err := tx.ExecContext(ctx, `
 	update users
 	set name = $1,
 		company = $2,
@@ -69,60 +64,15 @@ func (r *GithubDataPsgrRepo) UpdateUserData(userData domain.GithubUserData) (err
 		return toRepoError(err)
 	}
 
-	// update of repositories
-	// collect sql positional parameters($1, $2, $3...) for sql query
-	// amd query args in order with positional parameters
-	var (
-		upsertPosParams []string
-		upsertArgs      []any
-	)
+	// Batch/Chunk Repository Upsert (Postgres Limit: 65535 parameters)
+	batchSize := 500
+	for i := 0; i < len(userData.Repositories); i += batchSize {
+		end := min(i+batchSize, len(userData.Repositories))
 
-	i := 1
-	const columnsCount = 8
-	for _, item := range userData.Repositories {
-		nums := make([]any, columnsCount)
-
-		// generating numbers for postional parameters from i to i + columnsCount - 1
-		// for example (1-8, 9-16, 17-24)
-		for j := i; j < i+columnsCount; j++ {
-			nums[j-i] = j
+		chunk := userData.Repositories[i:end]
+		if err := r.upsertRepoBatch(ctx, tx, chunk); err != nil {
+			return toRepoError(err)
 		}
-
-		upsertPosParams = append(upsertPosParams, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)", nums...))
-		// collecting args in order with positional parameters
-		upsertArgs = append(upsertArgs,
-			item.ID,
-			item.OwnerUsername,
-			item.PushedAt,
-			item.UpdatedAt,
-			item.Language,
-			item.StarsCount,
-			item.Fork,
-			item.ForksCount,
-		)
-		i += columnsCount
-	}
-
-	// now format the query, by inserting positional parameters into it. example: "($1, $2), ($3, $4), ($5, $6)"
-	query := fmt.Sprintf(`
-	insert into repositories (github_id, owner_username, pushed_at, updated_at, language, stars_count, is_fork, forks_count)
-	values %s
-	on conflict (github_id)
-	do update set
-    pushed_at   = excluded.pushed_at,
-    updated_at  = excluded.updated_at,
-    language    = excluded.language,
-    stars_count = excluded.stars_count,
-    is_fork     = excluded.is_fork,
-    forks_count = excluded.forks_count;
-	`, strings.Join(upsertPosParams, ", "),
-	)
-
-	// execute query with collected args
-	_, err = tx.Exec(query, upsertArgs...)
-
-	if err != nil {
-		return toRepoError(err)
 	}
 
 	deleteArgs := make([]any, len(userData.Repositories)+1)
@@ -152,7 +102,13 @@ func (r *GithubDataPsgrRepo) UpdateUserData(userData domain.GithubUserData) (err
 		);
 	`, strings.Join(deletePosParams, ", "))
 
-	_, err = tx.Exec(deleteQuery, deleteArgs...)
+	if _, err = tx.ExecContext(ctx, deleteQuery, deleteArgs...); err != nil {
+		return toRepoError(err)
+	}
 
-	return toRepoError(err)
+	if err = tx.Commit(); err != nil {
+		return toRepoError(err)
+	}
+	commited = true
+	return nil
 }
