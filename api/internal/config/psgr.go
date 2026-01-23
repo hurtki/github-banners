@@ -34,7 +34,7 @@ func (e *ErrLoadPostgresConf) AddField(field string) {
 	e.fields = append(e.fields, field)
 }
 
-// LoadPostgres loads Postgres databse configuration and returns printable error if at least one field is missing
+// LoadPostgres loads Postgres database configuration and returns printable error if at least one field is missing
 func LoadPostgres() (*PostgresConfig, error) {
 	conf := PostgresConfig{}
 	err := &ErrLoadPostgresConf{}
@@ -53,7 +53,7 @@ func LoadPostgres() (*PostgresConfig, error) {
 	return &conf, err.Err()
 }
 
-// fillUpPostgresConf is a helper function to fill up configurration struct and collect all the missing fields
+// fillUpPostgresConf is a helper function to fill up configuration struct and collect all the missing fields
 func fillUpPostgresConf(vars map[string]*string, err *ErrLoadPostgresConf) {
 	for envKey, fieldPtr := range vars {
 		value, exists := os.LookupEnv(envKey)

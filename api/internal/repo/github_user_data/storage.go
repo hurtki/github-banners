@@ -14,13 +14,3 @@ type GithubDataPsgrRepo struct {
 func NewGithubDataPsgrRepo(db *sql.DB, logger logger.Logger) *GithubDataPsgrRepo {
 	return &GithubDataPsgrRepo{db: db, logger: logger}
 }
-
-/*
-Interface to implement
-type GithubStatsRepo interface {
-	AddUserData(domain.GithubUserData) error
-	GetUserData(username string) (domain.GithubUserData, error)
-	UpdateUserData(userData domain.GithubUserData) error
-	GetAllUsernames() ([]string, error)
-}
-*/

@@ -10,8 +10,8 @@ import (
 )
 
 // UpdateUserData updates user's data (including his repositories) in database using transaction
-func (r *GithubDataPsgrRepo) UpdateUserData(ctx context.Context, userData domain.GithubUserData) (err error) {
-	fn := "internal.repo.github_user_data.GithubDataPsgrRepo.UpdateUserData"
+func (r *GithubDataPsgrRepo) SaveUserData(ctx context.Context, userData domain.GithubUserData) (err error) {
+	fn := "internal.repo.github_user_data.GithubDataPsgrRepo.SaveUserData"
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		r.logger.Error("can't start transaction", "source", fn, "err", err)
@@ -31,28 +31,21 @@ func (r *GithubDataPsgrRepo) UpdateUserData(ctx context.Context, userData domain
 		}
 	}()
 
-	// update of the user table's row
-	res, err := tx.ExecContext(ctx, `
-	update users
-	set name = $1,
-		company = $2,
-		location = $3,
-		bio = $4,
-		public_repos_count = $5,
-		followers_count = $6,
-		following_count = $7,
-		fetched_at = $8
-	where username = $9;
-	`, userData.Name, userData.Company, userData.Location, userData.Bio, userData.PublicRepos, userData.Followers, userData.Following, userData.FetchedAt, userData.Username)
-
+	_, err = tx.ExecContext(ctx, `
+	INSERT INTO users (username, name, company, location, bio, public_repos_count, followers_count, following_count, fetched_at)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+	ON CONFLICT (username) DO UPDATE SET
+		name = EXCLUDED.name,
+		company = EXCLUDED.company,
+		location = EXCLUDED.location,
+		bio = EXCLUDED.bio,
+		public_repos_count = EXCLUDED.public_repos_count,
+		followers_count = EXCLUDED.followers_count,
+		following_count = EXCLUDED.following_count,
+		fetched_at = EXCLUDED.fetched_at;
+	`, userData.Username, userData.Name, userData.Company, userData.Location, userData.Bio, userData.PublicRepos, userData.Followers, userData.Following, userData.FetchedAt)
 	if err != nil {
 		return toRepoError(err)
-	}
-
-	// check if there were no rows affected, then nothing was updated -> ErrNothingChanged
-	count, _ := res.RowsAffected()
-	if count < 1 {
-		return repo.ErrNothingChanged
 	}
 
 	// if a new data says that there is not repositories, then delete all existing ones
