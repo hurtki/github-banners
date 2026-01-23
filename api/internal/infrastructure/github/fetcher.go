@@ -89,6 +89,7 @@ func (f *Fetcher) FetchUserData(ctx context.Context, username string) (*domain.G
 		}
 
 		domainRepos[i] = domain.GithubRepository{
+			ID:            repos[i].GetID(),
 			OwnerUsername: repos[i].GetOwner().GetLogin(),
 			PushedAt:      pushedAt,
 			UpdatedAt:     updatedAt,

@@ -9,6 +9,7 @@ import (
 	"github.com/hurtki/github-banners/api/internal/domain"
 	"github.com/hurtki/github-banners/api/internal/domain/services"
 	"github.com/hurtki/github-banners/api/internal/handlers"
+	infraDB "github.com/hurtki/github-banners/api/internal/infrastructure/db"
 	infraGithub "github.com/hurtki/github-banners/api/internal/infrastructure/github"
 	"github.com/hurtki/github-banners/api/internal/infrastructure/server"
 	log "github.com/hurtki/github-banners/api/internal/logger"
@@ -20,7 +21,14 @@ func main() {
 
 	// Setup logger
 	logger := log.NewLogger(cfg.LogLevel, cfg.LogFormat)
-	logger.Info("Starting GitHub Stats API")
+	logger.Info("Starting github banners API service")
+
+	psgrConf, err := config.LoadPostgres()
+	if err != nil {
+		logger.Error("Can't load postgres database config", "err", err.Error())
+		os.Exit(1)
+
+	}
 
 	// Create in-memory cache
 	memoryCache := cache.NewCache(cfg.CacheTTL)
@@ -35,6 +43,14 @@ func main() {
 
 	// Create stats service (domain service with cache)
 	statsService := services.NewStatsService(githubFetcher, memoryCache)
+	db, err := infraDB.NewDB(psgrConf, logger)
+	if err != nil {
+		logger.Error("can't intialize database, exiting", "err", err.Error())
+		os.Exit(1)
+	}
+
+	// temp usage to compile
+	db.Stats()
 
 	router := chi.NewRouter()
 
