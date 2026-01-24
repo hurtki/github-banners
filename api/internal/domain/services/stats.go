@@ -15,7 +15,13 @@ type StatsService struct {
 	ttl     time.Duration
 }
 
-func NewStatsService(fetcher *github.Fetcher, cache cache.Cache, ttl time.Duration) *StatsService {
+type GithubStatsRepo interface {
+	SaveUserData(ctx context.Context, userData domain.GithubUserData) error
+	GetUserData(ctx context.Context, username string) (domain.GithubUserData, error)
+	GetAllUsernames(ctx context.Context) ([]string, error)
+}
+
+func NewStatsService(fetcher *github.Fetcher, cache cache.Cache) *StatsService {
 	return &StatsService{
 		fetcher: fetcher,
 		cache:   cache,

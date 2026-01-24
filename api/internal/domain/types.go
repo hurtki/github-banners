@@ -5,6 +5,7 @@ import (
 )
 
 type GithubRepository struct {
+	ID            int64
 	OwnerUsername string
 	PushedAt      *time.Time
 	UpdatedAt     *time.Time
