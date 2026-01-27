@@ -2,132 +2,77 @@ package userstats
 
 import (
 	"context"
-	"fmt"
-	"log"
-	"sync"
 	"time"
+
+	userstats "github.com/hurtki/github-banners/api/internal/domain/user_stats"
+	"github.com/hurtki/github-banners/api/internal/logger"
 )
 
-type WorkerConfig struct {
-	BatchSize   int
-	Concurrency int
-}
-
-type UserStatsRefresher interface {
-	RecalculateAndSync(context.Context, string) (interface{}, error)
-	GetAllUsernames() ([]string, error)
-}
-
-func RunUserStatsWorker(ctx context.Context, service UserStatsRefresher, cfg WorkerConfig) (<-chan string, <-chan error) {
-	if cfg.BatchSize <= 0 {
-		cfg.BatchSize = 10
-	}
-	if cfg.Concurrency <= 0 {
-		cfg.Concurrency = 4
-	}
-
-	jobs := make(chan string, cfg.Concurrency)
-	results := make(chan string, cfg.BatchSize)
-	errs := make(chan error, cfg.Concurrency*2)
-
-	var workers sync.WaitGroup
-	var producer sync.WaitGroup
-
-	workers.Add(cfg.Concurrency)
-	for i := 0; i < cfg.Concurrency; i++ {
-		go func() {
-			defer workers.Done()
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				case username, ok := <-jobs:
-					if !ok {
-						return
-					}
-
-					_, err := service.RecalculateAndSync(ctx, username)
-					if err != nil {
-						errs <- fmt.Errorf("worker: failed to update for %s: %w", username, err)
-						continue
-					}
-
-					results <- username
-				}
-			}
-		}()
-	}
-
-	producer.Add(1)
-	go func() {
-		defer producer.Done()
-		defer close(jobs)
-
-		usernames, err := service.GetAllUsernames()
-		if err != nil {
-			errs <- fmt.Errorf("producer: %w", err)
-			return
-		}
-		for _, u := range usernames {
-			select {
-			case <-ctx.Done():
-				return
-			case jobs <- u:
-			}
-		}
-	}()
-
-	//cleanup
-	go func() {
-		producer.Wait()
-		workers.Wait()
-		close(results)
-		close(errs)
-	}()
-
-	return results, errs
-
-}
-
 type StatsWorker struct {
-	refreshAll func(context.Context) (<-chan string, <-chan error)
+	refreshAll RefreshAllFunc
 	interval   time.Duration
+	logger     logger.Logger
+	cfg        userstats.WorkerConfig
+}
+
+type RefreshAllFunc func(ctx context.Context, cfg userstats.WorkerConfig) (<-chan string, <-chan error)
+
+func NewStatsWorker(refreshAll RefreshAllFunc, interval time.Duration, logger logger.Logger, cfg userstats.WorkerConfig) *StatsWorker {
+	return &StatsWorker{
+		refreshAll: refreshAll,
+		interval:   interval,
+		logger:     logger.With("service", "stats-updater-worker"),
+		cfg:        cfg,
+	}
 }
 
 func (w *StatsWorker) Start(ctx context.Context) {
 	if w == nil || w.refreshAll == nil {
-		log.Println("stats worker: refreshAll is nil; worker not started")
+		w.logger.Warn("stats worker: refreshAll is nil; worker not started")
 		return
 	}
 
 	ticker := time.NewTicker(w.interval)
 	defer ticker.Stop()
 
-	log.Printf("stats worker: started, interval=%s", w.interval.String())
+	w.logger.Info("stats worker: started", "interval", w.interval.String())
 
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("stats worker: stopped, context canceled")
+			w.logger.Info("stats worker: stopped, context canceled")
 			return
 		case <-ticker.C:
-			resultsCh, errorsCh := w.refreshAll(ctx)
+			resultsCh, errorsCh := w.refreshAll(ctx, w.cfg)
+			success := 0
+			errors := 0
 
-			// Drain results and errors in background so Start
-			// keeps responding to context cancellation.
-			go func() {
-				for username := range resultsCh {
-					log.Printf("stats worker: refreshed %s", username)
-				}
-			}()
+			for resultsCh != nil || errorsCh != nil {
+				select {
+				case <-ctx.Done():
+					w.logger.Info("exiting stats worker by context")
+					return
 
-			go func() {
-				for err := range errorsCh {
+				case username, ok := <-resultsCh:
+					if !ok {
+						resultsCh = nil
+						continue
+					}
+					success++
+					w.logger.Debug("refreshed", "username", username)
+
+				case err, ok := <-errorsCh:
+					if !ok {
+						errorsCh = nil
+						continue
+					}
 					if err != nil {
-						log.Printf("stats worker: error: %v", err)
+						errors++
+						w.logger.Debug("error when updating", "err", err)
 					}
 				}
-			}()
+			}
+			w.logger.Info("finshed scheduled update", "success", success, "errors", errors)
 		}
 	}
 }

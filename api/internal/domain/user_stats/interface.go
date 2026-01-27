@@ -2,14 +2,15 @@ package userstats
 
 import (
 	"context"
-	"github.com/hurtki/github-banners/api/internal/domain"
 	"time"
+
+	"github.com/hurtki/github-banners/api/internal/domain"
 )
 
-type GithubStatsRepository interface {
-	GetUserData(username string) (domain.GithubUserData, error)
-	UpdateUserData(userData domain.GithubUserData) error
-	GetAllUsernames() ([]string, error)
+type GithubUserDataRepository interface {
+	SaveUserData(ctx context.Context, userData domain.GithubUserData) error
+	GetUserData(ctx context.Context, username string) (domain.GithubUserData, error)
+	GetAllUsernames(ctx context.Context) ([]string, error)
 }
 
 type Cache interface {
@@ -24,14 +25,4 @@ type UserDataFetcher interface {
 
 type CacheWriter interface {
 	Set(username string, stats *domain.GithubUserStats, ttl time.Duration)
-}
-
-// NewUserStatsService wires the domain service with its required ports.
-func NewUserStatsService(repo GithubStatsRepository, fetcher UserDataFetcher, cache Cache, cfg WorkerConfig) *UserStatsService {
-	return &UserStatsService{
-		repo:    repo,
-		fetcher: fetcher,
-		cache:   cache,
-		cfg:     cfg,
-	}
 }

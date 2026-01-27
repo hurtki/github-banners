@@ -2,12 +2,26 @@ package userstats
 
 import (
 	"context"
-	"log"
+	"errors"
+	"fmt"
 	"sync"
 	"time"
 
 	"github.com/hurtki/github-banners/api/internal/domain"
 )
+
+const (
+	SoftTTL = 10 * time.Minute
+	HardTTL = 24 * time.Hour
+)
+
+func NewUserStatsService(repo GithubUserDataRepository, fetcher UserDataFetcher, cache Cache) *UserStatsService {
+	return &UserStatsService{
+		repo:    repo,
+		fetcher: fetcher,
+		cache:   cache,
+	}
+}
 
 func (s *UserStatsService) GetStats(ctx context.Context, username string) (domain.GithubUserStats, error) {
 	cached, found := s.cache.Get(username)
@@ -27,7 +41,7 @@ func (s *UserStatsService) GetStats(ctx context.Context, username string) (domai
 	}
 
 	//checking database if cache missed
-	dbData, err := s.repo.GetUserData(username)
+	dbData, err := s.repo.GetUserData(context.TODO(), username)
 	if err == nil {
 		stats := CalculateStats(dbData.Repositories)
 		s.cache.Set(username, &CachedStats{
@@ -50,8 +64,11 @@ func (s *UserStatsService) RecalculateAndSync(ctx context.Context, username stri
 
 	stats := CalculateStats(data.Repositories)
 	//updating database with the new raw data
-	if err := s.repo.UpdateUserData(*data); err != nil {
-		log.Printf("DB Update failed for %s: %w", username, err)
+	if err := s.repo.SaveUserData(context.TODO(), *data); err != nil {
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return domain.GithubUserStats{}, err
+		}
+		// TODO, we really need to somehow log that we can't save to database or so something with it
 	}
 	s.cache.Set(username, &CachedStats{
 		Stats:     stats,
@@ -61,30 +78,69 @@ func (s *UserStatsService) RecalculateAndSync(ctx context.Context, username stri
 	return stats, nil
 }
 
-func (w *UserStatsService) RefreshAll(ctx context.Context) {
-	log.Println("worker: starting sync cycle...")
-
-	usernames, err := w.repo.GetAllUsernames()
-	if err != nil || len(usernames) == 0 {
-		return
+func (s *UserStatsService) RefreshAll(ctx context.Context, cfg WorkerConfig) (<-chan string, <-chan error) {
+	if cfg.BatchSize <= 0 {
+		cfg.BatchSize = 10
+	}
+	if cfg.Concurrency <= 0 {
+		cfg.Concurrency = 4
 	}
 
-	jobs := make(chan string, w.cfg.Concurrency)
-	var wg sync.WaitGroup
+	jobs := make(chan string, cfg.Concurrency)
+	results := make(chan string, cfg.BatchSize)
+	errs := make(chan error, cfg.Concurrency*2)
 
-	for i := 0; i < w.cfg.Concurrency; i++ {
-		wg.Add(1)
+	var workers sync.WaitGroup
+	var producer sync.WaitGroup
+
+	workers.Add(cfg.Concurrency)
+	for i := 0; i < cfg.Concurrency; i++ {
 		go func() {
-			defer wg.Done()
-			for username := range jobs {
-				w.RecalculateAndSync(ctx, username)
+			defer workers.Done()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case username, ok := <-jobs:
+					if !ok {
+						return
+					}
+					_, err := s.RecalculateAndSync(ctx, username)
+					if err != nil {
+						errs <- fmt.Errorf("worker: failed to update for %s: %w", username, err)
+						continue
+					}
+
+					results <- username
+				}
 			}
 		}()
 	}
 
-	for _, u := range usernames {
-		jobs <- u
-	}
-	close(jobs)
-	wg.Wait()
+	producer.Go(func() {
+		defer close(jobs)
+
+		usernames, err := s.repo.GetAllUsernames(ctx)
+		if err != nil {
+			errs <- fmt.Errorf("producer: %w", err)
+			return
+		}
+		for _, u := range usernames {
+			select {
+			case <-ctx.Done():
+				return
+			case jobs <- u:
+			}
+		}
+	})
+
+	//cleanup
+	go func() {
+		producer.Wait()
+		workers.Wait()
+		close(results)
+		close(errs)
+	}()
+
+	return results, errs
 }
