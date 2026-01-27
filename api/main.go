@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/hurtki/github-banners/api/internal/cache"
@@ -11,6 +12,7 @@ import (
 	"github.com/hurtki/github-banners/api/internal/handlers"
 	infraDB "github.com/hurtki/github-banners/api/internal/infrastructure/db"
 	infraGithub "github.com/hurtki/github-banners/api/internal/infrastructure/github"
+	"github.com/hurtki/github-banners/api/internal/infrastructure/renderer"
 	"github.com/hurtki/github-banners/api/internal/infrastructure/server"
 	log "github.com/hurtki/github-banners/api/internal/logger"
 )
@@ -32,6 +34,11 @@ func main() {
 
 	// Create in-memory cache
 	memoryCache := cache.NewCache(cfg.CacheTTL)
+
+	// renderer intialization
+	rendererAithRT := renderer.NewRendererAuthHTTPRoundTripper("api", renderer.NewHMACSigner(cfg.ServicesSecret), time.Now)
+	rendererHTTPClient := renderer.NewRendererHTTPClient(rendererAithRT)
+	/*rendererClient */ _ = renderer.NewRendererClient(rendererHTTPClient, logger, "https://renderer/preview/")
 
 	// Create service configuration
 	serviceConfig := &domain.ServiceConfig{
