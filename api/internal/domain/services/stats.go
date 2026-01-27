@@ -25,7 +25,7 @@ func NewStatsService(fetcher *github.Fetcher, cache cache.Cache) *StatsService {
 	return &StatsService{
 		fetcher: fetcher,
 		cache:   cache,
-		ttl:     ttl,
+		ttl:     time.Minute * 10,
 	}
 }
 
@@ -36,13 +36,14 @@ func (s *StatsService) GetUserStats(ctx context.Context, username string) (*doma
 		return cachedStats, nil
 	}
 
-	userData, err := s.fetcher.FetchUserData(ctx, username)
+	_, err := s.fetcher.FetchUserData(ctx, username)
 	if err != nil {
 		return nil, err
 	}
 
-	//calculating stats from data using the domain logic
-	stats := domain.CalculateStats(userData.Repositories)
+	// TODO: wire to new user_stats domain service; legacy path just
+	// returns an empty stats object so the package continues to compile.
+	stats := domain.GithubUserStats{}
 
 	// Caching it
 	go s.cache.Set(username, &stats, s.ttl)
