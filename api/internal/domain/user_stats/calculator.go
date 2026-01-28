@@ -1,8 +1,10 @@
-package domain
+package userstats
 
-// Calculating stats aggregates repository statistics without api calls
-func CalculateStats(repos []GithubRepository) GithubUserStats {
-	var stats GithubUserStats
+import "github.com/hurtki/github-banners/api/internal/domain"
+
+// CalculateStats aggregates repository statistics without additional API calls.
+func CalculateStats(repos []domain.GithubRepository) domain.GithubUserStats {
+	var stats domain.GithubUserStats
 	stats.Languages = make(map[string]int)
 
 	for _, repo := range repos {
