@@ -37,7 +37,7 @@ func main() {
 	memoryCache := cache.NewCache(cfg.CacheTTL)
 
 	// renderer infra intialization
-	rendererAithRT := renderer_http.NewRendererAuthHTTPRoundTripper("api", renderer_http.NewHMACSigner(cfg.ServicesSecret), time.Now)
+	rendererAithRT := renderer_http.NewRendererAuthHTTPRoundTripper("api", renderer_http.NewHMACSigner([]byte(cfg.ServicesSecret)), time.Now)
 	rendererHTTPClient := renderer_http.NewRendererHTTPClient(rendererAithRT)
 	/*rendererClient */ _ = renderer.NewRenderer(rendererHTTPClient, logger, "https://renderer/preview/")
 

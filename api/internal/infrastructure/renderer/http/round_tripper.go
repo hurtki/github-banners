@@ -18,13 +18,19 @@ type RendererAuthHTTPRoundTripper struct {
 
 // Signer represents signing algrorithm ( usually HMAC with secret key )
 type Signer interface {
-	Sign(data []byte) (string, error)
+	Sign(data []byte) string
 }
 
 // NewRendererAuthHTTPRoundTripper creates a new auth http round tripper implementation
 // It will use signer in order to sign all request to renderer service
 // and use clock as part of paylaod ( use time.Now() )
 func NewRendererAuthHTTPRoundTripper(serviceName string, signer Signer, clock func() time.Time) *RendererAuthHTTPRoundTripper {
+	if signer == nil {
+		panic("signer interface can't be nil, in NewRendererAuthHTTPRoundTripper")
+	}
+	if clock == nil {
+		panic("clock function can't be nil, in NewRendererAuthHTTPRoundTripper")
+	}
 	return &RendererAuthHTTPRoundTripper{
 		base:        http.DefaultTransport,
 		serviceName: serviceName,
@@ -45,10 +51,7 @@ func (rt *RendererAuthHTTPRoundTripper) RoundTrip(req *http.Request) (*http.Resp
 		rt.serviceName,
 	}, "\n")
 
-	signature, err := rt.signer.Sign([]byte(canonical))
-	if err != nil {
-		return nil, err
-	}
+	signature := rt.signer.Sign([]byte(canonical))
 
 	// clone, because by convention, only the goroutine that created the request object can change it.
 	// after creation it is kind of immutable

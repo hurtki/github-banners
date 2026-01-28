@@ -25,13 +25,13 @@ type Renderer struct {
 // previewEndpoint is an http/s endpoint (example https://renderer/preview/)
 func NewRenderer(httpClient *http.Client, logger logger.Logger, previewEndpoint string) *Renderer {
 	return &Renderer{
-		client:          http.DefaultClient,
+		client:          httpClient,
 		logger:          logger.With("service", "renderer-infra"),
 		previewEndpoint: previewEndpoint,
 	}
 }
 
-var (
+const (
 	requestTimeout = 2 * time.Second
 )
 
@@ -63,6 +63,7 @@ func (c *Renderer) RenderPreview(ctx context.Context, bannerInfo GithubUserBanne
 			// if our timeout context exceeded, so renderer service is unavalible
 			return nil, ErrCantRequestRenderer
 		case errors.Is(err, context.Canceled):
+			return nil, ctx.Err()
 		case errors.As(err, &urlErr):
 			c.logger.Error("network error occured, when requesting renderer service", "source", fn, "err", urlErr)
 			return nil, ErrCantRequestRenderer
