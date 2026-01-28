@@ -16,7 +16,7 @@ func (i GithubUserBannerInfo) ToBannerPreviewRequest() bannerPreviewRequest {
 		TotalRepos:    i.Stats.TotalRepos,
 		OriginalRepos: i.Stats.OriginalRepos,
 		ForkedRepos:   i.Stats.ForkedRepos,
-p	TotalStars:    i.Stats.TotalStars,
+		TotalStars:    i.Stats.TotalStars,
 		TotalForks:    i.Stats.TotalForks,
 		Languages:     i.Stats.Languages,
 	}

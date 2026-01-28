@@ -13,6 +13,7 @@ import (
 	infraDB "github.com/hurtki/github-banners/api/internal/infrastructure/db"
 	infraGithub "github.com/hurtki/github-banners/api/internal/infrastructure/github"
 	"github.com/hurtki/github-banners/api/internal/infrastructure/renderer"
+	renderer_http "github.com/hurtki/github-banners/api/internal/infrastructure/renderer/http"
 	"github.com/hurtki/github-banners/api/internal/infrastructure/server"
 	log "github.com/hurtki/github-banners/api/internal/logger"
 )
@@ -35,10 +36,10 @@ func main() {
 	// Create in-memory cache
 	memoryCache := cache.NewCache(cfg.CacheTTL)
 
-	// renderer intialization
-	rendererAithRT := renderer.NewRendererAuthHTTPRoundTripper("api", renderer.NewHMACSigner(cfg.ServicesSecret), time.Now)
-	rendererHTTPClient := renderer.NewRendererHTTPClient(rendererAithRT)
-	/*rendererClient */ _ = renderer.NewRendererClient(rendererHTTPClient, logger, "https://renderer/preview/")
+	// renderer infra intialization
+	rendererAithRT := renderer_http.NewRendererAuthHTTPRoundTripper("api", renderer_http.NewHMACSigner(cfg.ServicesSecret), time.Now)
+	rendererHTTPClient := renderer_http.NewRendererHTTPClient(rendererAithRT)
+	/*rendererClient */ _ = renderer.NewRenderer(rendererHTTPClient, logger, "https://renderer/preview/")
 
 	// Create service configuration
 	serviceConfig := &domain.ServiceConfig{

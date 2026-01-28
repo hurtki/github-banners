@@ -9,24 +9,33 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/hurtki/github-banners/api/internal/logger"
 )
 
+// Renderer is an infrastrcture layer port, to request renderer service using http
 type Renderer struct {
-	client   *http.Client
-	logger   logger.Logger
-	endpoint string
+	client          *http.Client
+	logger          logger.Logger
+	previewEndpoint string
 }
 
-func NewRenderer(httpClient *http.Client, logger logger.Logger, endpoint string) *Renderer {
+// NewRenderer initializes new Renderer that will use given httpClient, logger, and previewEndpoint
+// previewEndpoint is an http/s endpoint (example https://renderer/preview/)
+func NewRenderer(httpClient *http.Client, logger logger.Logger, previewEndpoint string) *Renderer {
 	return &Renderer{
-		client:   http.DefaultClient,
-		logger:   logger.With("service", "renderer-infra"),
-		endpoint: endpoint,
+		client:          http.DefaultClient,
+		logger:          logger.With("service", "renderer-infra"),
+		previewEndpoint: previewEndpoint,
 	}
 }
 
+var (
+	requestTimeout = 2 * time.Second
+)
+
+// RenderPreview requests renderer service for preview for given bannerInfo
 func (c *Renderer) RenderPreview(ctx context.Context, bannerInfo GithubUserBannerInfo) (*GithubBanner, error) {
 	fn := "internal.infrastructure.renderer.Renderer.RenderPreview"
 	reqBody, err := json.Marshal(bannerInfo.ToBannerPreviewRequest())
@@ -35,7 +44,10 @@ func (c *Renderer) RenderPreview(ctx context.Context, bannerInfo GithubUserBanne
 		return nil, ErrCantRequestRenderer
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", c.endpoint, bytes.NewReader(reqBody))
+	timeoutContext, cancel := context.WithTimeout(ctx, requestTimeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(timeoutContext, "POST", c.previewEndpoint, bytes.NewReader(reqBody))
 	if err != nil {
 		c.logger.Error("unexpected error when preparing request", "source", fn, "err", err)
 		return nil, ErrCantRequestRenderer
@@ -47,8 +59,10 @@ func (c *Renderer) RenderPreview(ctx context.Context, bannerInfo GithubUserBanne
 	if err != nil {
 		var urlErr *url.Error
 		switch {
-		case errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled):
-			return nil, err
+		case errors.Is(err, context.DeadlineExceeded):
+			// if our timeout context exceeded, so renderer service is unavalible
+			return nil, ErrCantRequestRenderer
+		case errors.Is(err, context.Canceled):
 		case errors.As(err, &urlErr):
 			c.logger.Error("network error occured, when requesting renderer service", "source", fn, "err", urlErr)
 			return nil, ErrCantRequestRenderer
