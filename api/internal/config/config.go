@@ -21,6 +21,8 @@ type Config struct {
 
 	LogLevel  string
 	LogFormat string
+
+	ServicesSecret string
 }
 
 func Load() *Config {
@@ -39,6 +41,7 @@ func Load() *Config {
 		RequestTimeout: getEnvAsDuration("REQUEST_TIMEOUT", 10*time.Second),
 		LogLevel:       getEnv("LOG_LEVEL", "info"),
 		LogFormat:      getEnv("LOG_FORMAT", "json"),
+		ServicesSecret: getEnv("SERVICES_SECRET_KEY", "1234"),
 	}
 }
 
