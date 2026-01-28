@@ -22,7 +22,3 @@ type Cache interface {
 type UserDataFetcher interface {
 	FetchUserData(ctx context.Context, username string) (*domain.GithubUserData, error)
 }
-
-type CacheWriter interface {
-	Set(username string, stats *domain.GithubUserStats, ttl time.Duration)
-}
