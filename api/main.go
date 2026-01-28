@@ -53,7 +53,6 @@ func main() {
 	repo := github_user_data.NewGithubDataPsgrRepo(db, logger)
 
 	// Create stats service (domain service with cache)
-	// TODO: update cache to match interface in statsService
 	statsService := userstats.NewUserStatsService(repo, githubFetcher, memoryCache)
 
 	// TODO add configurating of worker to app config from env variables
