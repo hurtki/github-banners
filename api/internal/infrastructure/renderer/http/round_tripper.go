@@ -1,4 +1,4 @@
-package renderer
+package renderer_http
 
 import (
 	"net/http"
@@ -7,17 +7,18 @@ import (
 	"time"
 )
 
-type Signer interface {
-	Sign(data []byte) (string, error)
-}
-
 // RendererAuthHTTPRoundTrip is a custom implementation of http.RoundTripper
-// It builds canonical, signs it, and sets headers, so the other service can identify this
+// It builds canonical, signs it, and sets headers, so the other service can identify our service
 type RendererAuthHTTPRoundTripper struct {
 	base        http.RoundTripper
 	serviceName string
 	signer      Signer
 	clock       func() time.Time
+}
+
+// Signer represents signing algrorithm ( usually HMAC with secret key )
+type Signer interface {
+	Sign(data []byte) (string, error)
 }
 
 // NewRendererAuthHTTPRoundTripper creates a new auth http round tripper implementation
@@ -29,12 +30,6 @@ func NewRendererAuthHTTPRoundTripper(serviceName string, signer Signer, clock fu
 		serviceName: serviceName,
 		signer:      signer,
 		clock:       clock,
-	}
-}
-
-func NewRendererHTTPClient(roundTripper http.RoundTripper) *http.Client {
-	return &http.Client{
-		Transport: roundTripper,
 	}
 }
 
@@ -55,8 +50,8 @@ func (rt *RendererAuthHTTPRoundTripper) RoundTrip(req *http.Request) (*http.Resp
 		return nil, err
 	}
 
-	// clone, because by convention, only the goroutine that created the request can change it.
-	// after creation is kinda immutable
+	// clone, because by convention, only the goroutine that created the request object can change it.
+	// after creation it is kind of immutable
 	r := req.Clone(req.Context())
 	r.Header.Set("X-Signature", signature)
 	r.Header.Set("X-Timestamp", strconv.FormatInt(ts, 10))

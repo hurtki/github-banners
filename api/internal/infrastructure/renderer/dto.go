@@ -9,8 +9,8 @@ type GithubUserBannerInfo struct {
 	domain.GithubUserStats
 }
 
-func (i GithubUserBannerInfo) ToBannerPreviewRequest() BannerPreviewRequest {
-	return BannerPreviewRequest{
+func (i GithubUserBannerInfo) ToBannerPreviewRequest() bannerPreviewRequest {
+	return bannerPreviewRequest{
 		Username:      i.Username,
 		BannerType:    i.BannerType,
 		TotalRepos:    i.TotalRepos,
@@ -29,7 +29,7 @@ type GithubBanner struct {
 	Banner     []byte
 }
 
-type BannerPreviewRequest struct {
+type bannerPreviewRequest struct {
 	Username      string         `json:"username"`
 	BannerType    string         `json:"banner_type"`
 	TotalRepos    int            `json:"total_repos"`
