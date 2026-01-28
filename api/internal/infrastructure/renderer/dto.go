@@ -6,19 +6,19 @@ import "github.com/hurtki/github-banners/api/internal/domain"
 type GithubUserBannerInfo struct {
 	Username   string
 	BannerType string
-	domain.GithubUserStats
+	Stats      domain.GithubUserStats
 }
 
 func (i GithubUserBannerInfo) ToBannerPreviewRequest() bannerPreviewRequest {
 	return bannerPreviewRequest{
 		Username:      i.Username,
 		BannerType:    i.BannerType,
-		TotalRepos:    i.TotalRepos,
-		OriginalRepos: i.OriginalRepos,
-		ForkedRepos:   i.ForkedRepos,
-		TotalStars:    i.TotalStars,
-		TotalForks:    i.TotalForks,
-		Languages:     i.Languages,
+		TotalRepos:    i.Stats.TotalRepos,
+		OriginalRepos: i.Stats.OriginalRepos,
+		ForkedRepos:   i.Stats.ForkedRepos,
+p	TotalStars:    i.Stats.TotalStars,
+		TotalForks:    i.Stats.TotalForks,
+		Languages:     i.Stats.Languages,
 	}
 }
 
