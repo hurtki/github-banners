@@ -9,6 +9,14 @@ type GithubUserBannerInfo struct {
 	Stats      domain.GithubUserStats
 }
 
+func FromDomainBannerInfo(bi domain.GithubUserBannerInfo) GithubUserBannerInfo {
+	return GithubUserBannerInfo{
+		Username:   bi.Username,
+		BannerType: domain.BannerTypesBackward[bi.BannerType],
+		Stats:      bi.Stats,
+	}
+}
+
 func (i GithubUserBannerInfo) ToBannerPreviewRequest() bannerPreviewRequest {
 	return bannerPreviewRequest{
 		Username:      i.Username,
@@ -26,7 +34,7 @@ func (i GithubUserBannerInfo) ToBannerPreviewRequest() bannerPreviewRequest {
 type GithubBanner struct {
 	Username   string
 	BannerType string
-	Banner     []byte
+	Banner     *[]byte
 }
 
 type bannerPreviewRequest struct {

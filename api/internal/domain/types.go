@@ -29,22 +29,36 @@ type GithubUserData struct {
 }
 
 type GithubUserStats struct {
-	TotalRepos    int            `json:"totalRepos"`
-	OriginalRepos int            `json:"originalRepos"`
-	ForkedRepos   int            `json:"forkedRepos"`
-	TotalStars    int            `json:"totalStars"`
-	TotalForks    int            `json:"totalForks"`
-	Languages     map[string]int `json:"languages"`
-}
-
-// ErrorResponse for API error responses
-type ErrorResponse struct {
-	Error   string `json:"error"`
-	Code    int    `json:"code"`
-	Message string `json:"message,omitempty"`
+	TotalRepos    int
+	OriginalRepos int
+	ForkedRepos   int
+	TotalStars    int
+	TotalForks    int
+	Languages     map[string]int
 }
 
 type ServiceConfig struct {
 	CacheTTL       time.Duration
 	RequestTimeout time.Duration
+}
+
+type BannerType int
+
+const (
+	TypeWide = iota
+)
+
+var BannerTypes map[string]BannerType = map[string]BannerType{"wide": TypeWide}
+var BannerTypesBackward map[BannerType]string = map[BannerType]string{TypeWide: "wide"}
+
+type GithubBanner struct {
+	Username   string
+	BannerType BannerType
+	Banner     *[]byte
+}
+
+type GithubUserBannerInfo struct {
+	Username   string
+	BannerType BannerType
+	Stats      GithubUserStats
 }

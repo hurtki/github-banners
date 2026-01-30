@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hurtki/github-banners/api/internal/domain"
 	"github.com/hurtki/github-banners/api/internal/infrastructure/renderer"
 	"github.com/hurtki/github-banners/api/internal/logger"
 	"github.com/jarcoal/httpmock"
@@ -32,6 +33,7 @@ func TestRenderer_RenderPreview(t *testing.T) {
 	httpmock.Activate(t)
 
 	apiUlr := "https://renderer/preview"
+	baseBodyBytes := []byte("<svg></svg>")
 
 	tests := []struct {
 		name string // description of this test case
@@ -42,8 +44,8 @@ func TestRenderer_RenderPreview(t *testing.T) {
 		responseBody string
 		httpResponse *http.Response
 		// Named input parameters for target function.
-		bannerInfo renderer.GithubUserBannerInfo
-		want       *renderer.GithubBanner
+		bannerInfo domain.GithubUserBannerInfo
+		want       *domain.GithubBanner
 		wantedErr  error
 	}{
 		{
@@ -58,8 +60,8 @@ func TestRenderer_RenderPreview(t *testing.T) {
 				}),
 				Body: &StringBody{strings.NewReader("<svg></svg>")},
 			},
-			bannerInfo: renderer.GithubUserBannerInfo{},
-			want:       &renderer.GithubBanner{Username: "", BannerType: "", Banner: []byte("<svg></svg>")},
+			bannerInfo: domain.GithubUserBannerInfo{},
+			want:       &domain.GithubBanner{Username: "", BannerType: domain.TypeWide, Banner: &baseBodyBytes},
 			wantedErr:  nil,
 		},
 		{
@@ -74,9 +76,9 @@ func TestRenderer_RenderPreview(t *testing.T) {
 				}),
 				Body: &StringBody{strings.NewReader("some jpeg stuff")},
 			},
-			bannerInfo: renderer.GithubUserBannerInfo{},
+			bannerInfo: domain.GithubUserBannerInfo{},
 			want:       nil,
-			wantedErr:  renderer.ErrCantRequestRenderer,
+			wantedErr:  domain.ErrUnavailable,
 		},
 		{
 			name:       "bad-request-status",
@@ -88,9 +90,9 @@ func TestRenderer_RenderPreview(t *testing.T) {
 				Header:     newHeader(map[string]string{}),
 				Body:       &StringBody{strings.NewReader("{\"error\":\"negative repos count\"}")},
 			},
-			bannerInfo: renderer.GithubUserBannerInfo{},
+			bannerInfo: domain.GithubUserBannerInfo{},
 			want:       nil,
-			wantedErr:  renderer.ErrBadPreviewRequest,
+			wantedErr:  &domain.ConflictError{Field: domain.UnknownConflictField},
 		},
 	}
 	for _, tt := range tests {
