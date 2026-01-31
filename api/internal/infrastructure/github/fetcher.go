@@ -2,46 +2,103 @@ package github
 
 import (
 	"context"
+	"net/http"
+	"sync"
 	"time"
 
 	"github.com/google/go-github/v81/github"
 	"github.com/hurtki/github-banners/api/internal/domain"
+	"github.com/hurtki/github-banners/api/internal/logger"
 	"golang.org/x/oauth2"
 )
 
 type Fetcher struct {
-	client *github.Client
-	config *domain.ServiceConfig
+	clients []*GithubClient
+	config  *domain.ServiceConfig
+	logger  logger.Logger
 }
 
-func NewFetcher(token string, config *domain.ServiceConfig) *Fetcher {
-	var client *github.Client
+// GithubClient is a wrap of GithubClient that contains rate limit info about client
+type GithubClient struct {
+	Client *github.Client
+	// Requests, that client has remaining, until limit
+	Remaining int
+	// time, when limit will reset
+	ResetsAt time.Time
 
-	if token != "" {
+	// mutex for concurrent changes of Remaining and ResetsAt fields
+	mu sync.Mutex
+}
+
+func NewFetcher(tokens []string, config *domain.ServiceConfig, logger logger.Logger) *Fetcher {
+	clients := []*GithubClient{}
+	initLogger := logger.With("service", "fetcher initialization function")
+	for _, token := range tokens {
+		var client *github.Client
+
+		if token == "" {
+			continue
+		}
 		tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
 		tokenClient := oauth2.NewClient(context.Background(), tokenSource)
 		client = github.NewClient(tokenClient)
+
+		timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+		clLimit, _, err := client.RateLimit.Get(timeoutCtx)
+		cancel()
+		if err != nil {
+			initLogger.Error("unexpected error, when getting client's rate limit, skipping it", "err", err)
+			continue
+		}
+
+		clients = append(clients, &GithubClient{
+			Client:    client,
+			Remaining: clLimit.Core.Remaining,
+			ResetsAt:  clLimit.Core.Reset.Time,
+			mu:        sync.Mutex{},
+		})
+	}
+	if len(clients) == 0 {
+		initLogger.Warn("initialized Fetcher without clients")
 	} else {
-		client = github.NewClient(nil)
+		initLogger.Info("initialized Fetcher", "clients count", len(clients))
 	}
 
 	return &Fetcher{
-		client: client,
-		config: config,
+		clients: clients,
+		config:  config,
+		logger:  logger.With("service", "github-fetcher"),
 	}
 }
 
 // FetchUser fetches the user data from GitHub
 func (f *Fetcher) fetchUser(ctx context.Context, username string) (*github.User, error) {
+	cl := f.acquireClient(ctx)
+	if cl == nil {
+		f.logger.Warn("can't find available client for github api request")
+		return nil, domain.ErrUnavailable
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, f.config.RequestTimeout)
 	defer cancel()
 
-	user, _, err := f.client.Users.Get(ctx, username)
+	user, res, err := cl.Client.Users.Get(ctx, username)
+	f.updateClientWithDoneResponse(cl, res.Response)
+	if err != nil {
+		if er, ok := err.(*github.ErrorResponse); ok {
+			if er.Response.StatusCode == http.StatusNotFound {
+				return nil, domain.ErrNotFound
+			}
+		}
+		return nil, domain.ErrUnavailable
+	}
+
 	return user, err
 }
 
 // FetchRepositories fetches all repositories for a user (paginated)
 func (f *Fetcher) fetchRepositories(ctx context.Context, username string) ([]*github.Repository, error) {
+
 	var allRepos []*github.Repository
 	opts := &github.RepositoryListByUserOptions{
 		Type:        "owner",
@@ -50,10 +107,32 @@ func (f *Fetcher) fetchRepositories(ctx context.Context, username string) ([]*gi
 	}
 
 	for {
-		repos, resp, err := f.client.Repositories.ListByUser(ctx, username, opts)
-		if err != nil {
-			return nil, err
+		// every page aquire a new client for one request
+		cl := f.acquireClient(ctx)
+		if cl == nil {
+			f.logger.Warn("can't find available client for github api request")
+			if allRepos == nil {
+				return nil, domain.ErrUnavailable
+			} else {
+				// even if we already collected couple repositories it shouldn't be returned
+				// because Fetcher is used as source of truth
+				return nil, domain.ErrUnavailable
+			}
 		}
+		timeoutCtx, cancel := context.WithTimeout(ctx, f.config.RequestTimeout)
+		repos, resp, err := cl.Client.Repositories.ListByUser(timeoutCtx, username, opts)
+		cancel()
+
+		if err != nil {
+			if er, ok := err.(*github.ErrorResponse); ok {
+				if er.Response.StatusCode == http.StatusNotFound {
+					return nil, domain.ErrNotFound
+				}
+			}
+			return nil, domain.ErrUnavailable
+		}
+		f.updateClientWithDoneResponse(cl, resp.Response)
+
 		allRepos = append(allRepos, repos...)
 		if resp.NextPage == 0 {
 			break
@@ -74,6 +153,7 @@ func (f *Fetcher) FetchUserData(ctx context.Context, username string) (*domain.G
 	if err != nil {
 		return nil, err
 	}
+
 	domainRepos := make([]domain.GithubRepository, len(repos))
 	for i := range len(repos) {
 		if repos[i] == nil {
@@ -86,6 +166,11 @@ func (f *Fetcher) FetchUserData(ctx context.Context, username string) (*domain.G
 		}
 		if repos[i].UpdatedAt != nil {
 			updatedAt = repos[i].UpdatedAt.GetTime()
+		}
+
+		var owner *github.User = repos[i].GetOwner()
+		if owner == nil || owner.GetLogin() == "" {
+			continue
 		}
 
 		domainRepos[i] = domain.GithubRepository{

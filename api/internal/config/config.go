@@ -11,7 +11,7 @@ type Config struct {
 	Port        string
 	CORSOrigins []string
 
-	GithubToken string
+	GithubTokens []string
 
 	RateLimitRPS int
 
@@ -32,10 +32,16 @@ func Load() *Config {
 		corsOrigins[i] = strings.TrimSpace(corsOrigins[i])
 	}
 
+	githubTokensEnv := getEnv("GITHUB_TOKENS", "*")
+	githubTokens := strings.Split(githubTokensEnv, ",")
+	for i := range githubTokens {
+		githubTokens[i] = strings.TrimSpace(githubTokens[i])
+	}
+
 	return &Config{
 		Port:           getEnv("PORT", "8080"),
 		CORSOrigins:    corsOrigins,
-		GithubToken:    os.Getenv("GITHUB_TOKEN"),
+		GithubTokens:   githubTokens,
 		RateLimitRPS:   getEnvAsInt("RATE_LIMIT_RPS", 10),
 		CacheTTL:       getEnvAsDuration("CACHE_TTL", 5*time.Minute),
 		RequestTimeout: getEnvAsDuration("REQUEST_TIMEOUT", 10*time.Second),
