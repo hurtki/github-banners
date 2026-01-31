@@ -3,7 +3,7 @@ package github
 import (
 	"context"
 	"net/http"
-	"strconv"
+	"sync"
 	"time"
 
 	"github.com/google/go-github/v81/github"
@@ -18,10 +18,16 @@ type Fetcher struct {
 	logger  logger.Logger
 }
 
+// GithubClient is a wrap of GithubClient that contains rate limit info about client
 type GithubClient struct {
-	Client    *github.Client
+	Client *github.Client
+	// Requests, that client has remaining, until limit
 	Remaining int
-	ResetsAt  time.Time
+	// time, when limit will reset
+	ResetsAt time.Time
+
+	// mutex for concurrent changes of Remaining and ResetsAt fields
+	mu sync.Mutex
 }
 
 func NewFetcher(tokens []string, config *domain.ServiceConfig, logger logger.Logger) *Fetcher {
@@ -37,7 +43,9 @@ func NewFetcher(tokens []string, config *domain.ServiceConfig, logger logger.Log
 		tokenClient := oauth2.NewClient(context.Background(), tokenSource)
 		client = github.NewClient(tokenClient)
 
-		clLimit, _, err := client.RateLimit.Get(context.TODO())
+		timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+		clLimit, _, err := client.RateLimit.Get(timeoutCtx)
+		cancel()
 		if err != nil {
 			initLogger.Error("unexpected error, when getting client's rate limit, skipping it", "err", err)
 			continue
@@ -47,6 +55,7 @@ func NewFetcher(tokens []string, config *domain.ServiceConfig, logger logger.Log
 			Client:    client,
 			Remaining: clLimit.Core.Remaining,
 			ResetsAt:  clLimit.Core.Reset.Time,
+			mu:        sync.Mutex{},
 		})
 	}
 	if len(clients) == 0 {
@@ -62,61 +71,9 @@ func NewFetcher(tokens []string, config *domain.ServiceConfig, logger logger.Log
 	}
 }
 
-// findBestClient finds client with at least one request available
-// if all clients are in limit, returns nil
-func (f *Fetcher) findClient(ctx context.Context) *GithubClient {
-	fn := "internal.infrastructure.github.Fetcher.findClient"
-	for _, cl := range f.clients {
-		if cl.Remaining > 0 {
-			return cl
-		}
-		if cl.ResetsAt.Before(time.Now()) {
-			ctx, cancel := context.WithTimeout(ctx, f.config.RequestTimeout)
-			rl, _, err := cl.Client.RateLimit.Get(ctx)
-			cancel()
-			if err != nil {
-				f.logger.Error("found client, that its Reset time is before Now(), error occured when getting its rate limit, skipping", "err", err, "source", fn)
-				continue
-			}
-			cl.ResetsAt = rl.Core.Reset.Time
-			cl.Remaining = rl.Core.Remaining
-			if cl.Remaining > 0 {
-				return cl
-			}
-		}
-	}
-	return nil
-}
-
-// updateClientWithResponse tries to get rate limit headers from response
-// and updates client's fields using them
-func (f *Fetcher) updateClientWithResponse(cl *GithubClient, res *http.Response) {
-	if res == nil {
-		return
-	}
-	resetUnix, err := strconv.ParseInt(
-		res.Header.Get("X-RateLimit-Reset"), 10, 64,
-	)
-	if err != nil {
-		f.logger.Error("can't parse X-RateLimit-Reset github api response header into int64", "err", err)
-	} else {
-		cl.ResetsAt = time.Unix(resetUnix, 0)
-	}
-
-	remaining, err := strconv.ParseInt(
-		res.Header.Get("X-RateLimit-Remaining"), 10, 64,
-	)
-	if err != nil {
-		f.logger.Error("can't parse X-RateLimit-Remaining github api response header into int64", "err", err)
-	} else {
-		cl.Remaining = int(remaining)
-	}
-
-}
-
 // FetchUser fetches the user data from GitHub
 func (f *Fetcher) fetchUser(ctx context.Context, username string) (*github.User, error) {
-	cl := f.findClient(ctx)
+	cl := f.acquireClient(ctx)
 	if cl == nil {
 		f.logger.Warn("can't find available client for github api request")
 		return nil, domain.ErrUnavailable
@@ -126,7 +83,7 @@ func (f *Fetcher) fetchUser(ctx context.Context, username string) (*github.User,
 	defer cancel()
 
 	user, res, err := cl.Client.Users.Get(ctx, username)
-	f.updateClientWithResponse(cl, res.Response)
+	f.updateClientWithDoneResponse(cl, res.Response)
 	if err != nil {
 		if er, ok := err.(*github.ErrorResponse); ok {
 			if er.Response.StatusCode == http.StatusNotFound {
@@ -141,11 +98,6 @@ func (f *Fetcher) fetchUser(ctx context.Context, username string) (*github.User,
 
 // FetchRepositories fetches all repositories for a user (paginated)
 func (f *Fetcher) fetchRepositories(ctx context.Context, username string) ([]*github.Repository, error) {
-	cl := f.findClient(ctx)
-	if cl == nil {
-		f.logger.Warn("can't find available client for github api request")
-		return nil, domain.ErrUnavailable
-	}
 
 	var allRepos []*github.Repository
 	opts := &github.RepositoryListByUserOptions{
@@ -155,7 +107,22 @@ func (f *Fetcher) fetchRepositories(ctx context.Context, username string) ([]*gi
 	}
 
 	for {
-		repos, resp, err := cl.Client.Repositories.ListByUser(ctx, username, opts)
+		// every page aquire a new client for one request
+		cl := f.acquireClient(ctx)
+		if cl == nil {
+			f.logger.Warn("can't find available client for github api request")
+			if allRepos == nil {
+				return nil, domain.ErrUnavailable
+			} else {
+				// even if we already collected couple repositories it shouldn't be returned
+				// because Fetcher is used as source of truth
+				return nil, domain.ErrUnavailable
+			}
+		}
+		timeoutCtx, cancel := context.WithTimeout(ctx, f.config.RequestTimeout)
+		repos, resp, err := cl.Client.Repositories.ListByUser(timeoutCtx, username, opts)
+		cancel()
+
 		if err != nil {
 			if er, ok := err.(*github.ErrorResponse); ok {
 				if er.Response.StatusCode == http.StatusNotFound {
@@ -164,7 +131,7 @@ func (f *Fetcher) fetchRepositories(ctx context.Context, username string) ([]*gi
 			}
 			return nil, domain.ErrUnavailable
 		}
-		f.updateClientWithResponse(cl, resp.Response)
+		f.updateClientWithDoneResponse(cl, resp.Response)
 
 		allRepos = append(allRepos, repos...)
 		if resp.NextPage == 0 {
@@ -199,6 +166,11 @@ func (f *Fetcher) FetchUserData(ctx context.Context, username string) (*domain.G
 		}
 		if repos[i].UpdatedAt != nil {
 			updatedAt = repos[i].UpdatedAt.GetTime()
+		}
+
+		var owner *github.User = repos[i].GetOwner()
+		if owner == nil || owner.GetLogin() == "" {
+			continue
 		}
 
 		domainRepos[i] = domain.GithubRepository{

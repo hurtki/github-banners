@@ -50,7 +50,7 @@ func main() {
 		RequestTimeout: cfg.RequestTimeout,
 	}
 	// Create GitHub fetcher (infrastructure layer)
-	githubFetcher := infraGithub.NewFetcher(cfg.GithubToken, serviceConfig)
+	githubFetcher := infraGithub.NewFetcher(cfg.GithubToken, serviceConfig, logger)
 
 	db, err := infraDB.NewDB(psgrConf, logger)
 	if err != nil {
