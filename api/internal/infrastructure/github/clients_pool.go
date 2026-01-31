@@ -21,8 +21,9 @@ func (f *Fetcher) acquireClient(ctx context.Context) *GithubClient {
 
 			return cl
 		}
-		// github returns ResetsAt header at UTC
-		if cl.ResetsAt.Before(time.Now().UTC()) {
+		// if the ResetTime we store is already in past
+		// then updating Remaining field
+		if cl.ResetsAt.Before(time.Now().UTC()) { // github returns ResetsAt header at UTC
 			// here unlock to do net call
 			cl.mu.Unlock()
 
@@ -44,8 +45,12 @@ func (f *Fetcher) acquireClient(ctx context.Context) *GithubClient {
 				cl.mu.Unlock()
 				return cl
 			}
+			// if new Remaining is still 0, then continuing with next client
 			cl.mu.Unlock()
+			continue
 		}
+		// if ResetTime is in future, unlock mutex to continue with next client
+		cl.mu.Unlock()
 	}
 	return nil
 }
