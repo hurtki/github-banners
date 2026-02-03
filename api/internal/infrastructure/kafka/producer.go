@@ -10,10 +10,9 @@ import (
 	"github.com/hurtki/github-banners/api/internal/domain"
 )
 
-
 type BannerProducer struct {
 	producer sarama.SyncProducer
-	topic	string
+	topic    string
 }
 
 func NewBannerProducer(brokers []string, topic string, cfg *sarama.Config) (*BannerProducer, error) {
@@ -24,22 +23,16 @@ func NewBannerProducer(brokers []string, topic string, cfg *sarama.Config) (*Ban
 
 	return &BannerProducer{
 		producer: producer,
-		topic: topic,
+		topic:    topic,
 	}, nil
 }
 
-func (p *BannerProducer) Publish(ctx context.Context, info domain.GithubUserBannerInfo)	error {
+func (p *BannerProducer) Publish(ctx context.Context, info domain.LTBannerInfo) error {
 	event := GithubBannerInfoEvent{
-		EventType: "github_banner_info_ready",
+		EventType:    "github_banner_info_ready",
 		EventVersion: 1,
-		ProducedAt: time.Now().UTC(),
-		Payload: Payload {
-			Username: info.Username,
-			BannerType: domain.BannerTypesBackward[info.BannerType],
-			StoragePath: info.StoragePath,
-			Stats: info.Stats,
-			FetchedAt: time.Now().UTC(),
-		},
+		ProducedAt:   time.Now().UTC(),
+		Payload:      FromDomainBannerInfoToPayload(info),
 	}
 
 	bytes, err := json.Marshal(event)
@@ -49,7 +42,7 @@ func (p *BannerProducer) Publish(ctx context.Context, info domain.GithubUserBann
 
 	msg := &sarama.ProducerMessage{
 		Topic: p.topic,
-		Key: sarama.StringEncoder(info.Username),
+		Key:   sarama.StringEncoder(info.Username),
 		Value: sarama.ByteEncoder(bytes),
 	}
 

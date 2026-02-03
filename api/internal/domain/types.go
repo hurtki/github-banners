@@ -41,24 +41,3 @@ type ServiceConfig struct {
 	CacheTTL       time.Duration
 	RequestTimeout time.Duration
 }
-
-type BannerType int
-
-const (
-	TypeWide = iota
-)
-
-var BannerTypes map[string]BannerType = map[string]BannerType{"wide": TypeWide}
-var BannerTypesBackward map[BannerType]string = map[BannerType]string{TypeWide: "wide"}
-
-type GithubBanner struct {
-	Username   string
-	BannerType BannerType
-	Banner     *[]byte
-}
-
-type GithubUserBannerInfo struct {
-	Username   string
-	BannerType BannerType
-	Stats      GithubUserStats
-}

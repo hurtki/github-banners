@@ -44,8 +44,8 @@ func TestRenderer_RenderPreview(t *testing.T) {
 		responseBody string
 		httpResponse *http.Response
 		// Named input parameters for target function.
-		bannerInfo domain.GithubUserBannerInfo
-		want       *domain.GithubBanner
+		bannerInfo domain.BannerInfo
+		want       *domain.Banner
 		wantedErr  error
 	}{
 		{
@@ -60,8 +60,8 @@ func TestRenderer_RenderPreview(t *testing.T) {
 				}),
 				Body: &StringBody{strings.NewReader("<svg></svg>")},
 			},
-			bannerInfo: domain.GithubUserBannerInfo{},
-			want:       &domain.GithubBanner{Username: "", BannerType: domain.TypeWide, Banner: &baseBodyBytes},
+			bannerInfo: domain.BannerInfo{},
+			want:       &domain.Banner{Username: "", BannerType: domain.TypeWide, Banner: baseBodyBytes},
 			wantedErr:  nil,
 		},
 		{
@@ -76,7 +76,7 @@ func TestRenderer_RenderPreview(t *testing.T) {
 				}),
 				Body: &StringBody{strings.NewReader("some jpeg stuff")},
 			},
-			bannerInfo: domain.GithubUserBannerInfo{},
+			bannerInfo: domain.BannerInfo{},
 			want:       nil,
 			wantedErr:  domain.ErrUnavailable,
 		},
@@ -90,7 +90,7 @@ func TestRenderer_RenderPreview(t *testing.T) {
 				Header:     newHeader(map[string]string{}),
 				Body:       &StringBody{strings.NewReader("{\"error\":\"negative repos count\"}")},
 			},
-			bannerInfo: domain.GithubUserBannerInfo{},
+			bannerInfo: domain.BannerInfo{},
 			want:       nil,
 			wantedErr:  &domain.ConflictError{Field: domain.UnknownConflictField},
 		},

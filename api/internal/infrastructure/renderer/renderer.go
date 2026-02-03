@@ -37,7 +37,7 @@ const (
 )
 
 // RenderPreview requests renderer service for preview for given bannerInfo
-func (c *Renderer) RenderPreview(ctx context.Context, bannerInfo domain.GithubUserBannerInfo) (*domain.GithubBanner, error) {
+func (c *Renderer) RenderPreview(ctx context.Context, bannerInfo domain.BannerInfo) (*domain.Banner, error) {
 	fn := "internal.infrastructure.renderer.Renderer.RenderPreview"
 	reqBody, err := json.Marshal(FromDomainBannerInfo(bannerInfo).ToBannerPreviewRequest())
 	if err != nil {
@@ -98,9 +98,9 @@ func (c *Renderer) RenderPreview(ctx context.Context, bannerInfo domain.GithubUs
 		c.logger.Error("unexpected error, when reading response body", "source", fn, "err", err)
 		return nil, domain.ErrUnavailable
 	}
-	return &domain.GithubBanner{
+	return &domain.Banner{
 		Username:   bannerInfo.Username,
 		BannerType: bannerInfo.BannerType,
-		Banner:     &resBody,
+		Banner:     resBody,
 	}, nil
 }

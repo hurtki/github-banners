@@ -12,7 +12,7 @@ type StatsService interface {
 }
 
 type PreviewRenderer interface {
-	RenderPreview(ctx context.Context, bannerInfo domain.GithubUserBannerInfo) (*domain.GithubBanner, error)
+	RenderPreview(ctx context.Context, bannerInfo domain.BannerInfo) (*domain.Banner, error)
 }
 
 type PreviewUsecase struct {
@@ -27,7 +27,7 @@ func NewPreviewUsecase(stats StatsService, renderer PreviewRenderer) *PreviewUse
 	}
 }
 
-func (u *PreviewUsecase) GetPreview(ctx context.Context, username string, bannerType string) (*domain.GithubBanner, error) {
+func (u *PreviewUsecase) GetPreview(ctx context.Context, username string, bannerType string) (*domain.Banner, error) {
 	// bannerType validation
 	bt, ok := domain.BannerTypes[bannerType]
 	if !ok {
@@ -42,7 +42,7 @@ func (u *PreviewUsecase) GetPreview(ctx context.Context, username string, banner
 		return nil, ErrCantGetPreview
 	}
 
-	preview, err := u.renderer.RenderPreview(ctx, domain.GithubUserBannerInfo{
+	preview, err := u.renderer.RenderPreview(ctx, domain.BannerInfo{
 		Username:   username,
 		BannerType: bt,
 		Stats:      userStats,
