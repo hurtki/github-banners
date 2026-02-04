@@ -12,8 +12,7 @@ func FromDomainBannerInfoToPayload(bf domain.LTBannerInfo) Payload {
 		BannerType:  domain.BannerTypesBackward[bf.BannerType],
 		StoragePath: bf.UrlPath,
 		Stats:       FromDomainUserStats(bf.Stats),
-		// TODO to refactor stats service and add to UserStats fields with time, when this stats were valid
-		//FetchedAt: ,
+		FetchedAt:   bf.Stats.FetchedAt,
 	}
 }
 

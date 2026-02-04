@@ -31,6 +31,7 @@ func (s *UserStatsService) GetStats(ctx context.Context, username string) (domai
 		if age <= SoftTTL {
 			return cached.Stats, nil
 		}
+
 		//stalte >10mins but <24 hours
 		go func() {
 			bgCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -44,6 +45,7 @@ func (s *UserStatsService) GetStats(ctx context.Context, username string) (domai
 	dbData, err := s.repo.GetUserData(context.TODO(), username)
 	if err == nil {
 		stats := CalculateStats(dbData.Repositories)
+		stats.FetchedAt = dbData.FetchedAt
 		s.cache.Set(username, &CachedStats{
 			Stats:     stats,
 			UpdatedAt: time.Now(),
@@ -63,6 +65,7 @@ func (s *UserStatsService) RecalculateAndSync(ctx context.Context, username stri
 	}
 
 	stats := CalculateStats(data.Repositories)
+	stats.FetchedAt = data.FetchedAt
 	//updating database with the new raw data
 	if err := s.repo.SaveUserData(context.TODO(), *data); err != nil {
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {

@@ -35,6 +35,7 @@ type GithubUserStats struct {
 	TotalStars    int
 	TotalForks    int
 	Languages     map[string]int
+	FetchedAt     time.Time
 }
 
 type ServiceConfig struct {
