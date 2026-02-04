@@ -1,6 +1,5 @@
 package domain
 
-// BannerType is a enum type for domain validation
 type BannerType int
 
 const (
@@ -18,10 +17,9 @@ var BannerTypesBackward = map[BannerType]string{
 // BannerInfo is all data that banner contains
 // used to render banner
 type BannerInfo struct {
-	Username    string
-	BannerType  BannerType
-	Stats       GithubUserStats
-	StoragePath string
+	Username   string
+	BannerType BannerType
+	Stats      GithubUserStats
 }
 
 // Long term banner info, embedded GithubBannerInfo with UrlPath

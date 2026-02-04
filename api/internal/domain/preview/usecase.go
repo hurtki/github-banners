@@ -38,7 +38,14 @@ func (u *PreviewUsecase) GetPreview(ctx context.Context, username string, banner
 	userStats, err := u.stats.GetStats(ctx, username)
 
 	if err != nil {
-		// TODO create issue on linear about error handling in github fetches infrastrcture
+		// if state is not found, then there is no user with this username, returning error
+		if errors.Is(err, domain.ErrNotFound) {
+			return nil, ErrUserDoesntExist
+		}
+		// if stats service are now unavailable, returning error, that we can't get preview
+		if errors.Is(err, domain.ErrUnavailable) {
+			return nil, ErrCantGetPreview
+		}
 		return nil, ErrCantGetPreview
 	}
 
