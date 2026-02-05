@@ -7,29 +7,31 @@ const (
 )
 
 var BannerTypes = map[string]BannerType{
-	"wide" : TypeWide,
+	"wide": TypeWide,
 }
 
-var BannerTypesBackward = map[BannerType]string {
+var BannerTypesBackward = map[BannerType]string{
 	TypeWide: "wide",
 }
 
-type GithubUserBannerInfo struct {
-	Username string
+// BannerInfo is all data that banner contains
+// used to render banner
+type BannerInfo struct {
+	Username   string
 	BannerType BannerType
-	Stats	GithubUserStats
-	StoragePath string
+	Stats      GithubUserStats
 }
 
-type GithubBanner struct {
-	Username	string 
-	BannerType	BannerType
-	Banner		[]byte
+// Long term banner info, embedded GithubBannerInfo with UrlPath
+// used for updates of long term banners
+type LTBannerInfo struct {
+	BannerInfo
+	UrlPath string
 }
 
-type GithubUserBannerDescriptor struct {
-	Username	string
-	URLPath		string
+// Rendered banner
+type Banner struct {
+	Username   string
 	BannerType BannerType
-	Stats		GithubUserStats
+	Banner     []byte
 }

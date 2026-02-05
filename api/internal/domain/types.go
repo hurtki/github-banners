@@ -29,19 +29,13 @@ type GithubUserData struct {
 }
 
 type GithubUserStats struct {
-	TotalRepos    int            `json:"totalRepos"`
-	OriginalRepos int            `json:"originalRepos"`
-	ForkedRepos   int            `json:"forkedRepos"`
-	TotalStars    int            `json:"totalStars"`
-	TotalForks    int            `json:"totalForks"`
-	Languages     map[string]int `json:"languages"`
-}
-
-// ErrorResponse for API error responses
-type ErrorResponse struct {
-	Error   string `json:"error"`
-	Code    int    `json:"code"`
-	Message string `json:"message,omitempty"`
+	TotalRepos    int
+	OriginalRepos int
+	ForkedRepos   int
+	TotalStars    int
+	TotalForks    int
+	Languages     map[string]int
+	FetchedAt     time.Time
 }
 
 type ServiceConfig struct {

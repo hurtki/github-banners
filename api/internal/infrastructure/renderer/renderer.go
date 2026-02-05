@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hurtki/github-banners/api/internal/domain"
 	"github.com/hurtki/github-banners/api/internal/logger"
 )
 
@@ -36,12 +37,12 @@ const (
 )
 
 // RenderPreview requests renderer service for preview for given bannerInfo
-func (c *Renderer) RenderPreview(ctx context.Context, bannerInfo GithubUserBannerInfo) (*GithubBanner, error) {
+func (c *Renderer) RenderPreview(ctx context.Context, bannerInfo domain.BannerInfo) (*domain.Banner, error) {
 	fn := "internal.infrastructure.renderer.Renderer.RenderPreview"
-	reqBody, err := json.Marshal(bannerInfo.ToBannerPreviewRequest())
+	reqBody, err := json.Marshal(FromDomainBannerInfo(bannerInfo).ToBannerPreviewRequest())
 	if err != nil {
 		c.logger.Error("unexpected error, when marshaling banner preview request", "source", fn, "err", err)
-		return nil, ErrCantRequestRenderer
+		return nil, domain.ErrUnavailable
 	}
 
 	timeoutContext, cancel := context.WithTimeout(ctx, requestTimeout)
@@ -50,7 +51,7 @@ func (c *Renderer) RenderPreview(ctx context.Context, bannerInfo GithubUserBanne
 	req, err := http.NewRequestWithContext(timeoutContext, "POST", c.previewEndpoint, bytes.NewReader(reqBody))
 	if err != nil {
 		c.logger.Error("unexpected error when preparing request", "source", fn, "err", err)
-		return nil, ErrCantRequestRenderer
+		return nil, domain.ErrUnavailable
 	}
 	req.Header.Set("Content-Type", "application/json")
 
@@ -61,15 +62,15 @@ func (c *Renderer) RenderPreview(ctx context.Context, bannerInfo GithubUserBanne
 		switch {
 		case errors.Is(err, context.DeadlineExceeded):
 			// if our timeout context exceeded, so renderer service is unavalible
-			return nil, ErrCantRequestRenderer
+			return nil, domain.ErrUnavailable
 		case errors.Is(err, context.Canceled):
 			return nil, ctx.Err()
 		case errors.As(err, &urlErr):
 			c.logger.Error("network error occured, when requesting renderer service", "source", fn, "err", urlErr)
-			return nil, ErrCantRequestRenderer
+			return nil, domain.ErrUnavailable
 		default:
 			c.logger.Error("unexpected error, when requesting renderer service", "source", fn, "err", err)
-			return nil, ErrCantRequestRenderer
+			return nil, domain.ErrUnavailable
 		}
 	}
 	defer res.Body.Close()
@@ -78,26 +79,26 @@ func (c *Renderer) RenderPreview(ctx context.Context, bannerInfo GithubUserBanne
 		switch {
 		case res.StatusCode == http.StatusUnauthorized:
 			c.logger.Error("unauthorized status code returned from renderer service", "source", fn)
-			return nil, ErrCantRequestRenderer
+			return nil, domain.ErrUnavailable
 		case res.StatusCode >= 400 && res.StatusCode < 500:
-			return nil, ErrBadPreviewRequest
+			return nil, domain.NewConflictError(domain.UnknownConflictField)
 		default:
 			c.logger.Error("unexpected status code from renderer service", "source", fn, "code", res.StatusCode)
-			return nil, ErrCantRequestRenderer
+			return nil, domain.ErrUnavailable
 		}
 	}
 	ct := res.Header.Get("Content-Type")
 	if !strings.HasPrefix(ct, "image/svg+xml") {
 		c.logger.Error("unexpected content type from renderer service", "source", fn, "content-type", ct)
-		return nil, ErrCantRequestRenderer
+		return nil, domain.ErrUnavailable
 	}
 	resBody, err := io.ReadAll(res.Body)
 
 	if err != nil {
 		c.logger.Error("unexpected error, when reading response body", "source", fn, "err", err)
-		return nil, ErrCantRequestRenderer
+		return nil, domain.ErrUnavailable
 	}
-	return &GithubBanner{
+	return &domain.Banner{
 		Username:   bannerInfo.Username,
 		BannerType: bannerInfo.BannerType,
 		Banner:     resBody,
