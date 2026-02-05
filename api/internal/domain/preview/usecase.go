@@ -38,15 +38,16 @@ func (u *PreviewUsecase) GetPreview(ctx context.Context, username string, banner
 	userStats, err := u.stats.GetStats(ctx, username)
 
 	if err != nil {
+		switch {
 		// if state is not found, then there is no user with this username, returning error
-		if errors.Is(err, domain.ErrNotFound) {
+		case errors.Is(err, domain.ErrNotFound):
 			return nil, ErrUserDoesntExist
-		}
 		// if stats service are now unavailable, returning error, that we can't get preview
-		if errors.Is(err, domain.ErrUnavailable) {
+		case errors.Is(err, domain.ErrUnavailable):
+			return nil, ErrCantGetPreview
+		default:
 			return nil, ErrCantGetPreview
 		}
-		return nil, ErrCantGetPreview
 	}
 
 	preview, err := u.renderer.RenderPreview(ctx, domain.BannerInfo{
