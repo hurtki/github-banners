@@ -10,6 +10,7 @@ import (
 	"github.com/hurtki/github-banners/api/internal/cache"
 	"github.com/hurtki/github-banners/api/internal/config"
 	"github.com/hurtki/github-banners/api/internal/domain"
+	"github.com/hurtki/github-banners/api/internal/domain/preview"
 	userstats "github.com/hurtki/github-banners/api/internal/domain/user_stats"
 	"github.com/hurtki/github-banners/api/internal/handlers"
 	infraDB "github.com/hurtki/github-banners/api/internal/infrastructure/db"
@@ -57,6 +58,7 @@ func main() {
 		logger.Error("can't intialize database, exiting", "err", err.Error())
 		os.Exit(1)
 	}
+	github_user_data.InitSchema(db)
 	repo := github_user_data.NewGithubDataPsgrRepo(db, logger)
 
 	// Create stats service (domain service with cache)
@@ -64,14 +66,20 @@ func main() {
 
 	// TODO add configurating of worker to app config from env variables
 	statsWorker := user_stats_worker.NewStatsWorker(statsService.RefreshAll, time.Hour, logger, userstats.WorkerConfig{BatchSize: 1, Concurrency: 1, CacheTTL: time.Hour})
-	statsWorker.Start(context.TODO())
+	go statsWorker.Start(context.TODO())
 
 	router := chi.NewRouter()
 
-	bannersHandler := handlers.NewBannersHandler(logger, statsService)
+	// renderer := NewSimplePreviewRenderer()
+	rendererRT := renderer_http.NewRendererAuthHTTPRoundTripper("api", renderer_http.NewHMACSigner([]byte(cfg.ServicesSecret)), time.Now)
+	renderer := renderer.NewRenderer(renderer_http.NewRendererHTTPClient(rendererRT), logger, "https://renderer/preview/")
 
-	router.Get("/banners/preview", bannersHandler.Preview)
-	router.Post("/banners", bannersHandler.Create)
+	previewUsecase := preview.NewPreviewUsecase(statsService, renderer)
+
+	bannersHandler := handlers.NewBannersHandler(logger, previewUsecase)
+
+	router.Get("/banners/preview/", bannersHandler.Preview)
+	router.Post("/banners/", bannersHandler.Create)
 
 	// Create and start HTTP server
 	srv := server.New(cfg, router, logger)

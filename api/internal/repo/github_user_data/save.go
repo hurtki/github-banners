@@ -27,7 +27,9 @@ func (r *GithubDataPsgrRepo) SaveUserData(ctx context.Context, userData domain.G
 		}
 		if !commited {
 			rbErr := tx.Rollback()
-			r.logger.Error("error occured, when rolling back transaction", "err", rbErr, "source", fn)
+			if rbErr != nil {
+				r.logger.Error("error occured, when rolling back transaction", "err", rbErr, "source", fn)
+			}
 		}
 	}()
 
@@ -82,7 +84,7 @@ func (r *GithubDataPsgrRepo) SaveUserData(ctx context.Context, userData domain.G
 		// fill of query args
 		deleteArgs[i-1] = userData.Repositories[i-2].ID
 		// fill of sql values
-		deletePosParams[i-2] = fmt.Sprintf("($%d)", i)
+		deletePosParams[i-2] = fmt.Sprintf("($%d::bigint)", i)
 	}
 
 	deleteQuery := fmt.Sprintf(`

@@ -44,7 +44,7 @@ func (r *GithubDataPsgrRepo) upsertRepoBatch(ctx context.Context, tx *sql.Tx, ba
 
 	query := fmt.Sprintf(`
 	insert into repositories (github_id, owner_username, pushed_at, updated_at, language, stars_count, is_fork, forks_count)
-	values (%s)
+	values %s
 	on conflict (github_id) do update set
 		owner_username = excluded.owner_username,
 		pushed_at      = excluded.pushed_at,
@@ -55,6 +55,6 @@ func (r *GithubDataPsgrRepo) upsertRepoBatch(ctx context.Context, tx *sql.Tx, ba
 		forks_count    = excluded.forks_count;
 	`, strings.Join(posParams, ", "))
 
-	_, err := tx.Exec(query, args...)
+	_, err := tx.ExecContext(ctx, query, args...)
 	return err
 }
