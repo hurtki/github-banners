@@ -2,10 +2,11 @@
 CREATE TABLE IF NOT EXISTS repositories (
     github_id BIGINT PRIMARY KEY, 
     owner_username TEXT NOT NULL, 
-    pushed_at TIMESTAMP NOT NULL, 
-    updated_at TIMESTAMP NOT NULL,
+    pushed_at TIMESTAMP, 
+    updated_at TIMESTAMP,
     language TEXT, 
     stars_count INT NOT NULL,
+    forks_count INT NOT NULL,
     is_fork BOOLEAN NOT NULL,
     CONSTRAINT fk_repository_owner
         FOREIGN KEY (owner_username) 
