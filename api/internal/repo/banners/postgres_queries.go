@@ -100,7 +100,7 @@ func (r *PostgresRepo) DeactivateBanner(ctx context.Context, githubUsername stri
 	}
 
 	if affected == 0 {
-		return repoerr.ErrNothingFound
+		return repoerr.ErrNothingChanged
 	}
 	return nil
 }
