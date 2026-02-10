@@ -1,0 +1,14 @@
+package banners
+
+import (
+	"context"
+
+	"github.com/hurtki/github-banners/api/internal/domain"
+)
+
+type BannerRepo interface {
+	GetActiveBanners(ctx context.Context) ([]domain.BannerMetadata, error)
+	AddBanner(ctx context.Context, banner domain.BannerMetadata) error
+	DeactivateBanner(ctx context.Context, githubUsername string) error
+	IsActive(ctx context.Context, githubUsername string) (bool, error)
+}
