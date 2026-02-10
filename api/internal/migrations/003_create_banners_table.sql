@@ -5,10 +5,7 @@ CREATE TABLE IF NOT EXISTS banners (
     storage_path TEXT NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_banner_user
-        FOREIGN KEY (github_username)
-        REFERENCES users(username) ON DELETE CASCADE
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_banners_github_username ON banners(github_username);
