@@ -30,9 +30,9 @@ type LTBannerInfo struct {
 }
 
 type BannerMetadata struct {
-	Username string 
+	Username   string
 	BannerType BannerType
-	UrlPath string
+	UrlPath    string
 }
 
 // Rendered banner

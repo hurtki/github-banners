@@ -3,6 +3,7 @@ package logger
 import (
 	"log/slog"
 	"os"
+	"strings"
 )
 
 type Logger interface {
@@ -19,7 +20,7 @@ type SlogLogger struct {
 
 func NewLogger(levelStr string, format string) Logger {
 	var level slog.Level
-	switch levelStr {
+	switch strings.ToLower(levelStr) {
 	case "debug":
 		level = slog.LevelDebug
 	case "info":

@@ -26,12 +26,14 @@ func (r *GithubDataPsgrRepo) GetUserData(ctx context.Context, username string) (
 		}
 		if !commited {
 			rbErr := tx.Rollback()
-			r.logger.Error("error occured, when rolling back transaction", "err", rbErr, "source", fn)
+			if rbErr != nil {
+				r.logger.Error("error occured, when rolling back transaction", "err", rbErr, "source", fn)
+			}
 		}
 	}()
 
 	row := tx.QueryRowContext(ctx, `
-	select (username, name, company, location, bio, public_repos_count, followers_count, following_count, fetched_at) from users
+	select username, name, company, location, bio, public_repos_count, followers_count, following_count, fetched_at from users
 	where username = $1;
 	`, username)
 
@@ -39,13 +41,17 @@ func (r *GithubDataPsgrRepo) GetUserData(ctx context.Context, username string) (
 
 	err = row.Scan(&data.Username, &data.Name, &data.Company, &data.Location, &data.Bio, &data.PublicRepos, &data.Followers, &data.Following, &data.FetchedAt)
 
+	if err != nil {
+		return domain.GithubUserData{}, toRepoError(err)
+	}
+
 	rows, err := tx.QueryContext(ctx, `
-	select (github_id, owner_username, pushed_at, updated_at, language, stars_count, is_fork, forks_count) from repositories
+	select github_id, owner_username, pushed_at, updated_at, language, stars_count, is_fork, forks_count from repositories
 	where owner_username = $1;
 	`, username)
 
 	if err != nil {
-		return domain.GithubUserData{}, err
+		return domain.GithubUserData{}, toRepoError(err)
 	}
 
 	githubRepos := []domain.GithubRepository{}

@@ -1,13 +1,13 @@
 -- +goose Up
 CREATE TABLE IF NOT EXISTS users (
-    username TEXT PRIMARY KEY, 
+    username TEXT PRIMARY KEY,
     name TEXT,
     company TEXT,
     location TEXT,
     bio TEXT,
     public_repos_count INT NOT NULL,
-    followers_count INT, 
-    following_count INT
+    followers_count INT,
+    following_count INT,
     fetched_at TIMESTAMP NOT NULL
 );
 

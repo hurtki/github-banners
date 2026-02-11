@@ -27,14 +27,16 @@ func (r *GithubDataPsgrRepo) SaveUserData(ctx context.Context, userData domain.G
 		}
 		if !commited {
 			rbErr := tx.Rollback()
-			r.logger.Error("error occured, when rolling back transaction", "err", rbErr, "source", fn)
+			if rbErr != nil {
+				r.logger.Error("error occured, when rolling back transaction", "err", rbErr, "source", fn)
+			}
 		}
 	}()
 
 	_, err = tx.ExecContext(ctx, `
-	INSERT INTO users (username, name, company, location, bio, public_repos_count, followers_count, following_count, fetched_at)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-	ON CONFLICT (username) DO UPDATE SET
+	insert into users (username, name, company, location, bio, public_repos_count, followers_count, following_count, fetched_at)
+	values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+	on conflict (username) do update set 
 		name = EXCLUDED.name,
 		company = EXCLUDED.company,
 		location = EXCLUDED.location,
@@ -82,7 +84,7 @@ func (r *GithubDataPsgrRepo) SaveUserData(ctx context.Context, userData domain.G
 		// fill of query args
 		deleteArgs[i-1] = userData.Repositories[i-2].ID
 		// fill of sql values
-		deletePosParams[i-2] = fmt.Sprintf("($%d)", i)
+		deletePosParams[i-2] = fmt.Sprintf("($%d::bigint)", i)
 	}
 
 	deleteQuery := fmt.Sprintf(`

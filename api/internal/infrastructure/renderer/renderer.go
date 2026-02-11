@@ -66,7 +66,7 @@ func (c *Renderer) RenderPreview(ctx context.Context, bannerInfo domain.BannerIn
 		case errors.Is(err, context.Canceled):
 			return nil, ctx.Err()
 		case errors.As(err, &urlErr):
-			c.logger.Error("network error occured, when requesting renderer service", "source", fn, "err", urlErr)
+			c.logger.Error("network error occurred, when requesting renderer service", "source", fn, "err", urlErr)
 			return nil, domain.ErrUnavailable
 		default:
 			c.logger.Error("unexpected error, when requesting renderer service", "source", fn, "err", err)

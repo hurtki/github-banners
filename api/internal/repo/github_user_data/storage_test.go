@@ -43,9 +43,9 @@ func TestSaveUserDataSucess(t *testing.T) {
 	mock.ExpectBegin()
 
 	mock.ExpectExec(`
-	INSERT INTO users (username, name, company, location, bio, public_repos_count, followers_count, following_count, fetched_at)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-	ON CONFLICT (username) DO UPDATE SET
+	insert into users (username, name, company, location, bio, public_repos_count, followers_count, following_count, fetched_at)
+	values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+	on conflict (username) do update set
 		name = EXCLUDED.name,
 		company = EXCLUDED.company,
 		location = EXCLUDED.location,
@@ -58,7 +58,7 @@ func TestSaveUserDataSucess(t *testing.T) {
 
 	mock.ExpectExec(`
 	insert into repositories (github_id, owner_username, pushed_at, updated_at, language, stars_count, is_fork, forks_count)
-	values (($1, $2, $3, $4, $5, $6, $7, $8), ($9, $10, $11, $12, $13, $14, $15, $16))
+	values ($1, $2, $3, $4, $5, $6, $7, $8), ($9, $10, $11, $12, $13, $14, $15, $16)
 	on conflict (github_id) do update set
 		owner_username = excluded.owner_username,
 		pushed_at      = excluded.pushed_at,
@@ -74,7 +74,7 @@ func TestSaveUserDataSucess(t *testing.T) {
 		where r.owner_username = $1
 		and not exists (
 			select 1
-			from (values ($2), ($3)) as v(github_id)
+			from (values ($2::bigint), ($3::bigint)) as v(github_id)
 			where v.github_id = r.github_id
 		);
 	`).WithArgs(userData.Username, githubRepo1.ID, githubRepo2.ID).WillReturnResult(sqlmock.NewResult(1, 1))
@@ -96,9 +96,9 @@ func TestSaveUserDataSucessNoRepos(t *testing.T) {
 	mock.ExpectBegin()
 
 	mock.ExpectExec(`
-	INSERT INTO users (username, name, company, location, bio, public_repos_count, followers_count, following_count, fetched_at)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-	ON CONFLICT (username) DO UPDATE SET
+	insert into users (username, name, company, location, bio, public_repos_count, followers_count, following_count, fetched_at)
+	values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+	on conflict (username) do update set
 		name = EXCLUDED.name,
 		company = EXCLUDED.company,
 		location = EXCLUDED.location,
@@ -171,12 +171,12 @@ func TestGetUserDataSuccess(t *testing.T) {
 	mock.ExpectBegin()
 
 	mock.ExpectQuery(`
-	select (username, name, company, location, bio, public_repos_count, followers_count, following_count, fetched_at) from users
+	select username, name, company, location, bio, public_repos_count, followers_count, following_count, fetched_at from users
 	where username = $1;
 	`).WithArgs(userData.Username).WillReturnRows(userRows)
 
 	mock.ExpectQuery(`
-	select (github_id, owner_username, pushed_at, updated_at, language, stars_count, is_fork, forks_count) from repositories
+	select github_id, owner_username, pushed_at, updated_at, language, stars_count, is_fork, forks_count from repositories
 	where owner_username = $1;
 	`).WithArgs(userData.Username).WillReturnRows(githubReposRows)
 	mock.ExpectCommit()
