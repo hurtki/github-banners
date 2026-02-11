@@ -43,7 +43,7 @@ func main() {
 	// renderer infra intialization
 	rendererAithRT := renderer_http.NewRendererAuthHTTPRoundTripper("api", renderer_http.NewHMACSigner([]byte(cfg.ServicesSecret)), time.Now)
 	rendererHTTPClient := renderer_http.NewRendererHTTPClient(rendererAithRT)
-	/*rendererClient */ _ = renderer.NewRenderer(rendererHTTPClient, logger, "https://renderer/preview/")
+	renderer := renderer.NewRenderer(rendererHTTPClient, logger, "https://renderer/preview/")
 
 	// Create service configuration
 	serviceConfig := &domain.ServiceConfig{
@@ -69,10 +69,6 @@ func main() {
 	go statsWorker.Start(context.TODO())
 
 	router := chi.NewRouter()
-
-	// renderer := NewSimplePreviewRenderer()
-	rendererRT := renderer_http.NewRendererAuthHTTPRoundTripper("api", renderer_http.NewHMACSigner([]byte(cfg.ServicesSecret)), time.Now)
-	renderer := renderer.NewRenderer(renderer_http.NewRendererHTTPClient(rendererRT), logger, "https://renderer/preview/")
 
 	previewUsecase := preview.NewPreviewUsecase(statsService, renderer)
 
