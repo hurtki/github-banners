@@ -34,9 +34,9 @@ func (r *GithubDataPsgrRepo) SaveUserData(ctx context.Context, userData domain.G
 	}()
 
 	_, err = tx.ExecContext(ctx, `
-	INSERT INTO users (username, name, company, location, bio, public_repos_count, followers_count, following_count, fetched_at)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-	ON CONFLICT (username) DO UPDATE SET
+	insert into users (username, name, company, location, bio, public_repos_count, followers_count, following_count, fetched_at)
+	values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+	on conflict (username) do update set 
 		name = EXCLUDED.name,
 		company = EXCLUDED.company,
 		location = EXCLUDED.location,
