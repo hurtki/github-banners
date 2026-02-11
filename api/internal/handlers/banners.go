@@ -32,7 +32,7 @@ func (h *BannersHandler) Preview(rw http.ResponseWriter, req *http.Request) {
 	username := req.URL.Query().Get("username")
 	bannerType := req.URL.Query().Get("type")
 
-	banner, err := h.preview.GetPreview(context.Background(), username, bannerType)
+	banner, err := h.preview.GetPreview(req.Context(), username, bannerType)
 	if err != nil {
 		switch {
 		case errors.Is(err, preview.ErrInvalidBannerType):
@@ -43,6 +43,9 @@ func (h *BannersHandler) Preview(rw http.ResponseWriter, req *http.Request) {
 			h.error(rw, http.StatusBadRequest, err.Error())
 		case errors.Is(err, preview.ErrCantGetPreview):
 			h.error(rw, http.StatusInternalServerError, err.Error())
+		default:
+			h.logger.Warn("unhandled error from usecase", "source", fn, "err", err)
+			h.error(rw, http.StatusInternalServerError, "can't get preview")
 		}
 		return
 	}
@@ -63,7 +66,7 @@ func (h *BannersHandler) Create(rw http.ResponseWriter, req *http.Request) {
 }
 
 // errror is used to write error in json
-// if error appears, logs it
+// if error, when marshaling appears, handles and logs it
 func (h *BannersHandler) error(rw http.ResponseWriter, statusCode int, message string) {
 	resJson := make(map[string]string)
 	resJson["error"] = message
