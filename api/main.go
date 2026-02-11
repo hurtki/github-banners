@@ -19,6 +19,7 @@ import (
 	renderer_http "github.com/hurtki/github-banners/api/internal/infrastructure/renderer/http"
 	"github.com/hurtki/github-banners/api/internal/infrastructure/server"
 	log "github.com/hurtki/github-banners/api/internal/logger"
+	"github.com/hurtki/github-banners/api/internal/migrations"
 	"github.com/hurtki/github-banners/api/internal/repo/github_user_data"
 )
 
@@ -55,10 +56,13 @@ func main() {
 
 	db, err := infraDB.NewDB(psgrConf, logger)
 	if err != nil {
-		logger.Error("can't intialize database, exiting", "err", err.Error())
+		logger.Error("can't initialize database, existing", "err", err.Error())
 		os.Exit(1)
 	}
-	github_user_data.InitSchema(db)
+	if err := migrations.RunMigrations(db); err != nil {
+		logger.Error("failed to run migrations", "err", err.Error())
+		os.Exit(1)
+	}
 	repo := github_user_data.NewGithubDataPsgrRepo(db, logger)
 
 	// Create stats service (domain service with cache)
