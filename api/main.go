@@ -39,12 +39,7 @@ func main() {
 	}
 
 	// Create in-memory cache
-	memoryCache := cache.NewCache(cfg.CacheTTL)
-
-	// renderer infra intialization
-	rendererAithRT := renderer_http.NewRendererAuthHTTPRoundTripper("api", renderer_http.NewHMACSigner([]byte(cfg.ServicesSecret)), time.Now)
-	rendererHTTPClient := renderer_http.NewRendererHTTPClient(rendererAithRT)
-	renderer := renderer.NewRenderer(rendererHTTPClient, logger, "https://renderer/preview/")
+	statsCache := cache.NewStatsMemoryCache(cfg.CacheTTL)
 
 	// Create service configuration
 	serviceConfig := &domain.ServiceConfig{
@@ -66,7 +61,7 @@ func main() {
 	repo := github_user_data.NewGithubDataPsgrRepo(db, logger)
 
 	// Create stats service (domain service with cache)
-	statsService := userstats.NewUserStatsService(repo, githubFetcher, memoryCache)
+	statsService := userstats.NewUserStatsService(repo, githubFetcher, statsCache)
 
 	// TODO add configurating of worker to app config from env variables
 	statsWorker := user_stats_worker.NewStatsWorker(statsService.RefreshAll, time.Hour, logger, userstats.WorkerConfig{BatchSize: 1, Concurrency: 1, CacheTTL: time.Hour})
@@ -74,7 +69,12 @@ func main() {
 
 	router := chi.NewRouter()
 
-	previewUsecase := preview.NewPreviewUsecase(statsService, renderer)
+	// renderer infra intialization
+	rendererAithRT := renderer_http.NewRendererAuthHTTPRoundTripper("api", renderer_http.NewHMACSigner([]byte(cfg.ServicesSecret)), time.Now)
+	rendererHTTPClient := renderer_http.NewRendererHTTPClient(rendererAithRT)
+	renderer := renderer.NewRenderer(rendererHTTPClient, logger, "https://renderer/preview/")
+
+	previewUsecase := preview.NewPreviewUsecase(statsService, preview.NewPreviewService(renderer, cache.NewPreviewMemoryCache(cfg.CacheTTL)))
 
 	bannersHandler := handlers.NewBannersHandler(logger, previewUsecase)
 
