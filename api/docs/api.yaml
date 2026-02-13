@@ -1,0 +1,208 @@
+openapi: 3.0.3
+info:
+  title: GitHub Banners API
+  description: API for generating GitHub user statistics banners
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+paths:
+  /banners/preview/:
+    get:
+      summary: Get banner preview for a GitHub user
+      description: Generates and returns an SVG banner with GitHub user statistics
+      operationId: getBannerPreview
+      parameters:
+        - name: username
+          in: query
+          required: true
+          description: GitHub username
+          schema:
+            type: string
+            example: torvalds
+        - name: type
+          in: query
+          required: true
+          description: Banner type
+          schema:
+            type: string
+            enum: [wide]
+            example: wide
+      responses:
+        '200':
+          description: Successfully generated banner
+          content:
+            image/svg+xml:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_banner_type:
+                  value:
+                    error: invalid banner type
+                invalid_inputs:
+                  value:
+                    error: invalid inputs
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: user doesn't exist
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: can't get preview
+
+  /banners/:
+    post:
+      summary: Create a long-term banner
+      description: Creates a persistent banner for a GitHub user (Not implemented)
+      operationId: createBanner
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBannerRequest'
+      responses:
+        '501':
+          description: Not implemented
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Error message
+
+    CreateBannerRequest:
+      type: object
+      required:
+        - username
+        - banner_type
+      properties:
+        username:
+          type: string
+          description: GitHub username
+          example: torvalds
+        banner_type:
+          type: string
+          enum: [wide]
+          description: Type of banner to create
+          example: wide
+
+    BannerPreviewRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          example: torvalds
+        banner_type:
+          type: string
+          example: wide
+        total_repos:
+          type: integer
+          example: 42
+        original_repos:
+          type: integer
+          example: 35
+        forked_repos:
+          type: integer
+          example: 7
+        total_stars:
+          type: integer
+          example: 150000
+        total_forks:
+          type: integer
+          example: 45000
+        languages:
+          type: object
+          additionalProperties:
+            type: integer
+          example:
+            Go: 15
+            Python: 10
+            TypeScript: 8
+
+    GithubUserStats:
+      type: object
+      properties:
+        totalRepos:
+          type: integer
+          example: 42
+        originalRepos:
+          type: integer
+          example: 35
+        forkedRepos:
+          type: integer
+          example: 7
+        totalStars:
+          type: integer
+          example: 150000
+        totalForks:
+          type: integer
+          example: 45000
+        languages:
+          type: object
+          additionalProperties:
+            type: integer
+          example:
+            Go: 15
+            Python: 10
+
+    GithubBannerInfoEvent:
+      type: object
+      description: Kafka event for banner info (for future use)
+      properties:
+        event_type:
+          type: string
+          example: github_banner_info_ready
+        event_version:
+          type: integer
+          example: 1
+        produced_at:
+          type: string
+          format: date-time
+        payload:
+          $ref: '#/components/schemas/BannerEventPayload'
+
+    BannerEventPayload:
+      type: object
+      properties:
+        username:
+          type: string
+          example: torvalds
+        banner_type:
+          type: string
+          example: wide
+        storage_path:
+          type: string
+          example: /banners/torvalds/wide.svg
+        stats:
+          $ref: '#/components/schemas/GithubUserStats'
+        fetched_at:
+          type: string
+          format: date-time
