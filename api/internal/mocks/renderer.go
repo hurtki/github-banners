@@ -96,7 +96,7 @@ func (mr *MockCacheMockRecorder) Get(arg0 any) *gomock.Call {
 }
 
 // Set mocks base method.
-func (m *MockCache) Set(arg0 domain.BannerInfo, arg1 domain.Banner) {
+func (m *MockCache) Set(arg0 domain.BannerInfo, arg1 *domain.Banner) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Set", arg0, arg1)
 }
