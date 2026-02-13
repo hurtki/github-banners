@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/hurtki/github-banners/api/internal/domain"
+	"golang.org/x/sync/singleflight"
 )
 
 type PreviewRenderer interface {
@@ -11,8 +12,8 @@ type PreviewRenderer interface {
 }
 
 type Cache interface {
-	Get(domain.BannerInfo) (*domain.Banner, bool)
-	Set(domain.BannerInfo, *domain.Banner)
+	Get(domain.BannerInfo) (*domain.Banner, string, bool)
+	Set(string, *domain.Banner)
 }
 
 // PreviewService is a service that caches renderer results
@@ -21,24 +22,34 @@ type Cache interface {
 type PreviewService struct {
 	renderer PreviewRenderer
 	cache    Cache
+	g        singleflight.Group
 }
 
 func NewPreviewService(renderer PreviewRenderer, cache Cache) *PreviewService {
 	return &PreviewService{
 		renderer: renderer,
 		cache:    cache,
+		g:        singleflight.Group{},
 	}
 }
 
 func (s *PreviewService) GetPreview(ctx context.Context, bannerInfo domain.BannerInfo) (*domain.Banner, error) {
-	if banner, ok := s.cache.Get(bannerInfo); ok {
+	banner, hash, ok := s.cache.Get(bannerInfo)
+	if ok {
 		return banner, nil
 	}
 
-	banner, err := s.renderer.RenderPreview(ctx, bannerInfo)
+	res, err, ok := s.g.Do(hash, func() (any, error) {
+		return s.renderer.RenderPreview(ctx, bannerInfo)
+	})
+
 	if err != nil {
 		return nil, err
 	}
-	s.cache.Set(bannerInfo, banner)
-	return banner, nil
+
+	if banner, ok := res.(*domain.Banner); ok {
+		s.cache.Set(hash, banner)
+		return banner, nil
+	}
+	return nil, domain.ErrUnavailable
 }

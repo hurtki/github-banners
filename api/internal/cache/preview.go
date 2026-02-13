@@ -1,85 +1,47 @@
 package cache
 
 import (
-	"encoding/binary"
-	"fmt"
-	"sort"
 	"time"
 
-	"github.com/cespare/xxhash/v2"
 	"github.com/hurtki/github-banners/api/internal/domain"
 	"github.com/patrickmn/go-cache"
 )
 
+// PreviewMemoryCache is used to cache rendered banners with same domain.BannerInfo
+// Get returns banner ( nil if found is false); bannerInfo hash ( always returned, same for same BannerInfo ); found ( is banner found in cache )
+// Set uses bannerInfo hash, that Get returned to store rendered banner in cache
 type PreviewMemoryCache struct {
-	cache *cache.Cache
-	ttl   time.Duration
+	cache       *cache.Cache
+	ttl         time.Duration
+	hashCounter bannerInfoHashCounter
 }
 
 func NewPreviewMemoryCache(ttl time.Duration) *PreviewMemoryCache {
 	return &PreviewMemoryCache{
-		cache: cache.New(ttl, time.Minute*10),
-		ttl:   ttl,
+		cache:       cache.New(ttl, time.Minute*10),
+		ttl:         ttl,
+		hashCounter: newBannerInfoHashCounter(),
 	}
 }
 
-func (c *PreviewMemoryCache) Get(bf domain.BannerInfo) (*domain.Banner, bool) {
-	if item, found := c.cache.Get(getHashKey(bf)); found {
+// Get gets rendered banner from cache and returns it
+// Second return is hash, that will be the same for same bannerInfo ( excluding FetchedAt field, for different FetchedAt fields it will be same, if other fields are the same)
+// Third return is found, if found is false, then banner pointer is nil ( but hash is valid )
+func (c *PreviewMemoryCache) Get(bf domain.BannerInfo) (*domain.Banner, string, bool) {
+	hashKey := c.hashCounter.Hash(bf)
+	if item, found := c.cache.Get(hashKey); found {
 		if banner, ok := item.(*domain.Banner); ok {
-			return banner, true
+			return banner, hashKey, true
 		}
 	}
-	return nil, false
+	return nil, hashKey, false
 }
 
-func (c *PreviewMemoryCache) Set(bf domain.BannerInfo, banner *domain.Banner) {
-	c.cache.Set(getHashKey(bf), banner, c.ttl)
-}
-
-func getHashKey(b domain.BannerInfo) string {
-	h := xxhash.New()
-
-	// Username
-	h.WriteString(b.Username)
-
-	// BannerType
-	writeInt(h, int(b.BannerType))
-
-	// Stats
-	writeInt(h, b.Stats.TotalRepos)
-	writeInt(h, b.Stats.OriginalRepos)
-	writeInt(h, b.Stats.ForkedRepos)
-	writeInt(h, b.Stats.TotalStars)
-	writeInt(h, b.Stats.TotalForks)
-
-	// Languages (sorted for determinism)
-	if len(b.Stats.Languages) > 0 {
-		keys := make([]string, 0, len(b.Stats.Languages))
-		for k := range b.Stats.Languages {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
-
-		for _, k := range keys {
-			h.WriteString(k)
-			writeInt(h, b.Stats.Languages[k])
-		}
+// Set sets rendered banner to cache using hash, that Get method generated
+// banner pointer shouldn't be nil, otherwise panic
+func (c *PreviewMemoryCache) Set(hashKey string, banner *domain.Banner) {
+	if banner == nil {
+		panic("nil banner set in PreviewMemoryCache")
 	}
-
-	// FetchedAt (use unix nano for determinism)
-	writeInt64(h, b.Stats.FetchedAt.UnixNano())
-
-	return fmt.Sprintf("%x", h.Sum64())
-}
-
-func writeInt(h *xxhash.Digest, v int) {
-	var buf [8]byte
-	binary.LittleEndian.PutUint64(buf[:], uint64(v))
-	h.Write(buf[:])
-}
-
-func writeInt64(h *xxhash.Digest, v int64) {
-	var buf [8]byte
-	binary.LittleEndian.PutUint64(buf[:], uint64(v))
-	h.Write(buf[:])
+	c.cache.Set(hashKey, banner, c.ttl)
 }
