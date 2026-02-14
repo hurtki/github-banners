@@ -11,19 +11,19 @@ type StatsService interface {
 	GetStats(context.Context, string) (domain.GithubUserStats, error)
 }
 
-type PreviewRenderer interface {
-	RenderPreview(ctx context.Context, bannerInfo domain.BannerInfo) (*domain.Banner, error)
+type PreviewProvider interface {
+	GetPreview(ctx context.Context, bannerInfo domain.BannerInfo) (*domain.Banner, error)
 }
 
 type PreviewUsecase struct {
-	stats    StatsService
-	renderer PreviewRenderer
+	stats           StatsService
+	previewProvider PreviewProvider
 }
 
-func NewPreviewUsecase(stats StatsService, renderer PreviewRenderer) *PreviewUsecase {
+func NewPreviewUsecase(stats StatsService, previewProvider PreviewProvider) *PreviewUsecase {
 	return &PreviewUsecase{
-		stats:    stats,
-		renderer: renderer,
+		stats:           stats,
+		previewProvider: previewProvider,
 	}
 }
 
@@ -50,7 +50,7 @@ func (u *PreviewUsecase) GetPreview(ctx context.Context, username string, banner
 		}
 	}
 
-	preview, err := u.renderer.RenderPreview(ctx, domain.BannerInfo{
+	preview, err := u.previewProvider.GetPreview(ctx, domain.BannerInfo{
 		Username:   username,
 		BannerType: bt,
 		Stats:      userStats,

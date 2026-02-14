@@ -7,21 +7,17 @@ import (
 	"github.com/patrickmn/go-cache"
 )
 
-type Cache interface {
-	userstats.Cache
-}
-
-type MemoryCache struct {
+type StatsMemoryCache struct {
 	cache *cache.Cache
 }
 
-func NewCache(defaultTTL time.Duration) Cache {
-	return &MemoryCache{
+func NewStatsMemoryCache(defaultTTL time.Duration) *StatsMemoryCache {
+	return &StatsMemoryCache{
 		cache: cache.New(defaultTTL, 10*time.Minute),
 	}
 }
 
-func (c *MemoryCache) Get(username string) (*userstats.CachedStats, bool) {
+func (c *StatsMemoryCache) Get(username string) (*userstats.CachedStats, bool) {
 	if item, found := c.cache.Get(username); found {
 		if stats, ok := item.(*userstats.CachedStats); ok {
 			return stats, true
@@ -30,10 +26,10 @@ func (c *MemoryCache) Get(username string) (*userstats.CachedStats, bool) {
 	return nil, false
 }
 
-func (c *MemoryCache) Set(username string, entry *userstats.CachedStats, ttl time.Duration) {
+func (c *StatsMemoryCache) Set(username string, entry *userstats.CachedStats, ttl time.Duration) {
 	c.cache.Set(username, entry, ttl)
 }
 
-func (c *MemoryCache) Delete(username string) {
+func (c *StatsMemoryCache) Delete(username string) {
 	c.cache.Delete(username)
 }

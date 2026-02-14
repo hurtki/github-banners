@@ -5,6 +5,7 @@ go 1.25.5
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/IBM/sarama v1.46.3
+	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/go-chi/chi/v5 v5.2.4
 	github.com/google/go-github/v81 v81.0.0
 	github.com/jackc/pgx/v5 v5.8.0
