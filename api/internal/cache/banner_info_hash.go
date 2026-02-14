@@ -37,6 +37,7 @@ func (c *bannerInfoHashCounter) Hash(b domain.BannerInfo) string {
 
 	// Username
 	h.WriteString(b.Username)
+	h.Write([]byte{0})
 
 	// BannerType
 	writeInt(h, int(b.BannerType))
