@@ -18,7 +18,19 @@ type BannerProducer struct {
 }
 
 func NewBannerProducer(brokers []string, topic string, cfg *sarama.Config, logger logger.Logger) (*BannerProducer, error) {
-	producer, err := sarama.NewSyncProducer(brokers, cfg)
+	fn := "internal.infrastructure.kafka.NewBannerProducer"
+	var producer sarama.SyncProducer
+	var err error
+	for try := range 10 {
+		producer, err = sarama.NewSyncProducer(brokers, cfg)
+		if err != nil {
+			logger.Warn("can't connect to kafka", "try", try+1, "err", err, "source", fn)
+			time.Sleep(time.Second)
+			continue
+		} else {
+			break
+		}
+	}
 	if err != nil {
 		return nil, fmt.Errorf("kafka producer init failed: %w", err)
 	}
