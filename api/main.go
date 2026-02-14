@@ -15,6 +15,7 @@ import (
 	"github.com/hurtki/github-banners/api/internal/handlers"
 	infraDB "github.com/hurtki/github-banners/api/internal/infrastructure/db"
 	infraGithub "github.com/hurtki/github-banners/api/internal/infrastructure/github"
+	"github.com/hurtki/github-banners/api/internal/infrastructure/kafka"
 	"github.com/hurtki/github-banners/api/internal/infrastructure/renderer"
 	renderer_http "github.com/hurtki/github-banners/api/internal/infrastructure/renderer/http"
 	"github.com/hurtki/github-banners/api/internal/infrastructure/server"
@@ -64,7 +65,7 @@ func main() {
 	statsService := userstats.NewUserStatsService(repo, githubFetcher, statsCache)
 
 	// TODO add configurating of worker to app config from env variables
-	statsWorker := user_stats_worker.NewStatsWorker(statsService.RefreshAll, time.Hour, logger, userstats.WorkerConfig{BatchSize: 1, Concurrency: 1, CacheTTL: time.Hour})
+	statsWorker := user_stats_worker.NewStatsWorker(statsService.RefreshAll, time.Hour, logger, userstats.WorkerConfig{BatchSize: 5, Concurrency: 10, CacheTTL: time.Hour})
 	go statsWorker.Start(context.TODO())
 
 	router := chi.NewRouter()
@@ -81,10 +82,17 @@ func main() {
 	router.Get("/banners/preview/", bannersHandler.Preview)
 	router.Post("/banners/", bannersHandler.Create)
 
+	/*producer*/
+	_, err = kafka.NewBannerProducer([]string{"kafka:9092"}, "banner-update", config.NewProducerConfig(), logger)
+	if err != nil {
+		logger.Error("can't connect to kafka as a producer", "err", err)
+		os.Exit(1)
+	}
+
 	// Create and start HTTP server
 	srv := server.New(cfg, router, logger)
 	if err := srv.Start(); err != nil {
-		logger.Error("Server error", "error", err)
+		logger.Error("Server error", "err", err)
 		os.Exit(1)
 	}
 }
