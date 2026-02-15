@@ -75,7 +75,7 @@ func main() {
 	// renderer infra intialization
 	rendererAuthRT := http_auth.NewAuthHTTPRoundTripper("api", http_auth.NewHMACSigner([]byte(cfg.ServicesSecret)), time.Now)
 	rendererHTTPClient := renderer_http.NewRendererHTTPClient(rendererAuthRT)
-	renderer := renderer.NewRenderer(rendererHTTPClient, logger, "https://renderer/preview/")
+	renderer := renderer.NewRenderer(rendererHTTPClient, logger, cfg.RendererBaseURL)
 
 	// storage infra initialization
 	storageAuthRT := http_auth.NewAuthHTTPRoundTripper(
@@ -89,9 +89,9 @@ func main() {
 	}
 
 	storageClient := storage.NewClient(
-		cfg.StorageBaseURL,
-		storageHTTPClient,
-		logger,
+    cfg.StorageBaseURL,
+    storageHTTPClient,
+    logger,
 	)
 
 	previewUsecase := preview.NewPreviewUsecase(statsService, preview.NewPreviewService(renderer, cache.NewPreviewMemoryCache(cfg.CacheTTL)))
