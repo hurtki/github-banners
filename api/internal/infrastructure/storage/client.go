@@ -10,21 +10,22 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/hurtki/github-banners/api/internal/logger"
 )
-
-type Logger interface {
-	With(args ...any) Logger
-	Info(msg string, args ...any)
-	Error(msg string, args ...any)
-}
-
 type Client struct {
 	baseURL    string
 	httpClient *http.Client
-	logger     Logger
+	logger     logger.Logger
 }
 
-func NewClient(baseURL string, httpClient *http.Client, logger Logger) *Client {
+func NewStorageHTTPClient(roundTripper http.RoundTripper) *http.Client {
+	return &http.Client{
+		Transport: roundTripper,
+	}
+}
+
+func NewClient(baseURL string, httpClient *http.Client, logger logger.Logger) *Client {
 	if baseURL == "" {
 		panic("storage: baseURL cannot be empty")
 	}
@@ -38,18 +39,18 @@ func NewClient(baseURL string, httpClient *http.Client, logger Logger) *Client {
 	return &Client{
 		baseURL:    strings.TrimRight(baseURL, "/"),
 		httpClient: httpClient,
-		logger:     logger.With("seriver", "storage.infrastructure"),
+		logger:     logger.With("service", "storage.infrastructure"),
 	}
 }
 
 func (c *Client) SaveBanner(ctx context.Context, bannerID string, svg string) (string, error) {
-	fn := "internal.infrastructure.storage.client.SaveBanner"
-	start := time.Now()
+   fn := "internal.infrastructure.storage.client.SaveBanner"
+   start := time.Now()
 
-	c.logger.Info("saving banner to storage",
-		"source", fn,
-		"banner_id", bannerID,
-	)
+   c.logger.Debug("saving banner to storage",
+	   "source", fn,
+	   "banner_id", bannerID,
+   )
 
 	encoded := base64.StdEncoding.EncodeToString([]byte(svg))
 	reqBody := SaveRequest{
@@ -110,11 +111,8 @@ func (c *Client) SaveBanner(ctx context.Context, bannerID string, svg string) (s
 		return "", fmt.Errorf("storage returned status %d", resp.StatusCode)
 	}
 
-	var response struct {
-		URL string `json:"url"`
-	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&SaveResponse); err != nil {
 		c.logger.Error("failed to decode the storage response",
 			"source", fn,
 			"banner_id", bannerID,
@@ -124,11 +122,11 @@ func (c *Client) SaveBanner(ctx context.Context, bannerID string, svg string) (s
 		return "", fmt.Errorf("decode response: %w", err)
 	}
 
-	c.logger.Info("banner saved successfully",
+	c.logger.Debug("banner saved successfully",
 		"source", fn,
 		"banner_id", bannerID,
-		"url", response.URL,
+		"url", SaveResponse.URL,
 		"duration", duration,
 	)
-	return response.URL, nil
+	return SaveResponse.URL, nil
 }
