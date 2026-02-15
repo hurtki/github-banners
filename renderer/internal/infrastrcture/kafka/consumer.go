@@ -5,22 +5,27 @@ import (
 	"fmt"
 
 	"github.com/IBM/sarama"
-	"github.com/hurtki/github-banners/renderer/internal/config"
+	kafka_config "github.com/hurtki/github-banners/renderer/internal/config/kafka"
 	"github.com/hurtki/github-banners/renderer/internal/logger"
 )
 
-type KafkaConsumer struct {
-	cg                       sarama.ConsumerGroup
-	logger                   logger.Logger
-	cg_banner_update_handler sarama.ConsumerGroupHandler
+const (
+	kafkaConnectionTries = 10
+)
+
+type KafkaConsumerGroup struct {
+	ctx    context.Context
+	cg     sarama.ConsumerGroup
+	logger logger.Logger
 }
 
-func NewKafkaConsumer(logger logger.Logger, cfg config.KafkaConsumerConfig, cg_banner_update_handler sarama.ConsumerGroupHandler) (*KafkaConsumer, error) {
-	fn := "internal.infrastructure.kafka.NewKafkaConsumer"
+func NewKafkaConsumerGroup(ctx context.Context, logger logger.Logger, cfg kafka_config.KafkaConsumerConfig) (*KafkaConsumerGroup, error) {
+	fn := "internal.infrastructure.kafka.NewKafkaConsumerGroup"
+
 	var cg sarama.ConsumerGroup
 	var err error
-	for i := range 10 {
-		cg, err = sarama.NewConsumerGroup(cfg.Addrs, "banner-update", cfg.SaramaCfg)
+	for i := range kafkaConnectionTries {
+		cg, err = sarama.NewConsumerGroup(cfg.Addrs, "banner-update-cg", cfg.SaramaCfg)
 		if err != nil {
 			logger.Warn("can't initialize consumer group", "try", i+1, "source", fn)
 			continue
@@ -31,16 +36,20 @@ func NewKafkaConsumer(logger logger.Logger, cfg config.KafkaConsumerConfig, cg_b
 	if err != nil {
 		return nil, fmt.Errorf("kafka consumer group init failed: %w", err)
 	}
-	return &KafkaConsumer{
-		cg:                       cg,
-		logger:                   logger,
-		cg_banner_update_handler: cg_banner_update_handler,
+
+	return &KafkaConsumerGroup{
+		ctx: ctx,
+		cg:     cg,
+		logger: logger,
 	}, nil
 }
 
-func (c *KafkaConsumer) StartListening(ctx context.Context) {
-	err := c.cg.Consume(ctx, []string{"banner-update"}, c.cg_banner_update_handler)
+func (c *KafkaConsumerGroup) RegisterCGHandler(topics []string, handler sarama.ConsumerGroupHandler) error {
+	err := c.cg.Consume(c.ctx, topics, handler)
+
 	if err != nil {
-		fmt.Println("error occured when starting consuming")
+		return fmt.Errorf("error occured when registering consumer group handler, %w", err)
 	}
+
+	return nil
 }
