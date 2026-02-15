@@ -1,4 +1,4 @@
-package renderer_http
+package httpauth
 
 import (
 	"net/http"
@@ -7,9 +7,9 @@ import (
 	"time"
 )
 
-// RendererAuthHTTPRoundTrip is a custom implementation of http.RoundTripper
+// SigningRoundTripper is a custom implementation of http.RoundTripper
 // It builds canonical, signs it, and sets headers, so the other service can identify our service
-type RendererAuthHTTPRoundTripper struct {
+type SigningRoundTripper struct {
 	base        http.RoundTripper
 	serviceName string
 	signer      Signer
@@ -24,14 +24,14 @@ type Signer interface {
 // NewRendererAuthHTTPRoundTripper creates a new auth http round tripper implementation
 // It will use signer in order to sign all request to renderer service
 // and use clock as part of paylaod ( use time.Now() )
-func NewRendererAuthHTTPRoundTripper(serviceName string, signer Signer, clock func() time.Time) *RendererAuthHTTPRoundTripper {
+func NewAuthHTTPRoundTripper(serviceName string, signer Signer, clock func() time.Time) *SigningRoundTripper {
 	if signer == nil {
 		panic("signer interface can't be nil, in NewRendererAuthHTTPRoundTripper")
 	}
 	if clock == nil {
 		panic("clock function can't be nil, in NewRendererAuthHTTPRoundTripper")
 	}
-	return &RendererAuthHTTPRoundTripper{
+	return &SigningRoundTripper{
 		base:        http.DefaultTransport,
 		serviceName: serviceName,
 		signer:      signer,
@@ -39,7 +39,7 @@ func NewRendererAuthHTTPRoundTripper(serviceName string, signer Signer, clock fu
 	}
 }
 
-func (rt *RendererAuthHTTPRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+func (rt *SigningRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	ts := rt.clock().Unix()
 
 	// canonical:

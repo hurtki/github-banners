@@ -23,6 +23,9 @@ type Config struct {
 	LogFormat string
 
 	ServicesSecret string
+
+	StorageBaseURL string
+	RendererBaseURL string
 }
 
 func Load() *Config {
@@ -48,6 +51,8 @@ func Load() *Config {
 		LogLevel:       getEnv("LOG_LEVEL", "info"),
 		LogFormat:      getEnv("LOG_FORMAT", "json"),
 		ServicesSecret: getEnv("SERVICES_SECRET_KEY", "1234"),
+		StorageBaseURL:  getEnv("STORAGE_BASE_URL", "http://storage/"),
+    	RendererBaseURL: getEnv("RENDERER_BASE_URL", "https://renderer/"),
 	}
 }
 

@@ -1,5 +1,7 @@
 package domain
 
+import "context"
+
 type BannerType int
 
 const (
@@ -40,4 +42,8 @@ type Banner struct {
 	Username   string
 	BannerType BannerType
 	Banner     []byte
+}
+
+type Storage interface {
+	SaveBanner(ctx context.Context, bannerID string, svg string) (string, error)
 }
