@@ -73,7 +73,7 @@ func main() {
 	router := chi.NewRouter()
 
 	// renderer infra intialization
-	rendererAuthRT := http_auth.NewRendererAuthHTTPRoundTripper("api", http_auth.NewHMACSigner([]byte(cfg.ServicesSecret)), time.Now)
+	rendererAuthRT := http_auth.NewAuthHTTPRoundTripper("api", http_auth.NewHMACSigner([]byte(cfg.ServicesSecret)), time.Now)
 	rendererHTTPClient := renderer_http.NewRendererHTTPClient(rendererAuthRT)
 	renderer := renderer.NewRenderer(rendererHTTPClient, logger, "https://renderer/preview/")
 
