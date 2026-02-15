@@ -6,6 +6,6 @@ type SaveRequest struct {
 	BannerFormat string `json:"banner_format"`
 }
 
-var SaveResponse struct {
+type SaveResponse struct {
 	URL string `json:"url"`
 }
