@@ -111,8 +111,8 @@ func (c *Client) SaveBanner(ctx context.Context, bannerID string, svg string) (s
 		return "", fmt.Errorf("storage returned status %d", resp.StatusCode)
 	}
 
-
-	if err := json.NewDecoder(resp.Body).Decode(&SaveResponse); err != nil {
+	var SaveResp SaveResponse
+	if err := json.NewDecoder(resp.Body).Decode(&SaveResp); err != nil {
 		c.logger.Error("failed to decode the storage response",
 			"source", fn,
 			"banner_id", bannerID,
@@ -125,8 +125,8 @@ func (c *Client) SaveBanner(ctx context.Context, bannerID string, svg string) (s
 	c.logger.Debug("banner saved successfully",
 		"source", fn,
 		"banner_id", bannerID,
-		"url", SaveResponse.URL,
+		"url", SaveResp.URL,
 		"duration", duration,
 	)
-	return SaveResponse.URL, nil
+	return SaveResp.URL, nil
 }
