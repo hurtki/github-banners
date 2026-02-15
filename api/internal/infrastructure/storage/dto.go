@@ -5,3 +5,7 @@ type SaveRequest struct {
 	BannerData   string `json:"banner_info"`
 	BannerFormat string `json:"banner_format"`
 }
+
+var SaveResponse struct {
+	URL string `json:"url"`
+}
