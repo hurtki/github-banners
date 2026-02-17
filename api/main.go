@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"net/http"
 	"os"
 	"time"
 
@@ -15,10 +16,12 @@ import (
 	"github.com/hurtki/github-banners/api/internal/handlers"
 	infraDB "github.com/hurtki/github-banners/api/internal/infrastructure/db"
 	infraGithub "github.com/hurtki/github-banners/api/internal/infrastructure/github"
+	http_auth "github.com/hurtki/github-banners/api/internal/infrastructure/httpauth"
 	"github.com/hurtki/github-banners/api/internal/infrastructure/kafka"
 	"github.com/hurtki/github-banners/api/internal/infrastructure/renderer"
 	renderer_http "github.com/hurtki/github-banners/api/internal/infrastructure/renderer/http"
 	"github.com/hurtki/github-banners/api/internal/infrastructure/server"
+	"github.com/hurtki/github-banners/api/internal/infrastructure/storage"
 	log "github.com/hurtki/github-banners/api/internal/logger"
 	"github.com/hurtki/github-banners/api/internal/migrations"
 	"github.com/hurtki/github-banners/api/internal/repo/github_user_data"
@@ -71,9 +74,26 @@ func main() {
 	router := chi.NewRouter()
 
 	// renderer infra intialization
-	rendererAithRT := renderer_http.NewRendererAuthHTTPRoundTripper("api", renderer_http.NewHMACSigner([]byte(cfg.ServicesSecret)), time.Now)
-	rendererHTTPClient := renderer_http.NewRendererHTTPClient(rendererAithRT)
-	renderer := renderer.NewRenderer(rendererHTTPClient, logger, "https://renderer/preview/")
+	rendererAuthRT := http_auth.NewAuthHTTPRoundTripper("api", http_auth.NewHMACSigner([]byte(cfg.ServicesSecret)), time.Now)
+	rendererHTTPClient := renderer_http.NewRendererHTTPClient(rendererAuthRT)
+	renderer := renderer.NewRenderer(rendererHTTPClient, logger, cfg.RendererBaseURL)
+
+	// storage infra initialization
+	storageAuthRT := http_auth.NewAuthHTTPRoundTripper(
+		"api",
+		http_auth.NewHMACSigner([]byte(cfg.ServicesSecret)),
+		time.Now,
+	)
+
+	storageHTTPClient := &http.Client{
+		Transport: storageAuthRT,
+	}
+
+	storageClient := storage.NewClient(
+		cfg.StorageBaseURL,
+		storageHTTPClient,
+		logger,
+	)
 
 	previewUsecase := preview.NewPreviewUsecase(statsService, preview.NewPreviewService(renderer, cache.NewPreviewMemoryCache(cfg.CacheTTL)))
 

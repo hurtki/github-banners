@@ -21,7 +21,8 @@ func TestServiceGetPreviewSuccessFromCache(t *testing.T) {
 	bnrInfo := domain.BannerInfo{Username: "hurtki", BannerType: domain.TypeWide}
 	expectedBanner := domain.Banner{Username: bnrInfo.Username, BannerType: bnrInfo.BannerType, Banner: []byte("some")}
 
-	cache.EXPECT().Get(bnrInfo).Return(&expectedBanner, true)
+	hash := "frefrfref"
+	cache.EXPECT().Get(bnrInfo).Return(&expectedBanner, hash, true)
 	bnr, err := service.GetPreview(context.Background(), bnrInfo)
 	require.Nil(t, err)
 	require.Equal(t, &expectedBanner, bnr)
@@ -37,11 +38,12 @@ func TestServiceGetPreviewSuccessNoCache(t *testing.T) {
 
 	bnrInfo := domain.BannerInfo{Username: "hurtki", BannerType: domain.TypeWide}
 	expectedBanner := domain.Banner{Username: bnrInfo.Username, BannerType: bnrInfo.BannerType, Banner: []byte("some")}
+	hash := "frefrfref"
 	ctx := t.Context()
 
-	cache.EXPECT().Get(bnrInfo).Return(nil, false)
+	cache.EXPECT().Get(bnrInfo).Return(nil, hash, false)
 	renderer.EXPECT().RenderPreview(ctx, bnrInfo).Return(&expectedBanner, nil)
-	cache.EXPECT().Set(bnrInfo, &expectedBanner)
+	cache.EXPECT().Set(hash, &expectedBanner)
 
 	bnr, err := service.GetPreview(ctx, bnrInfo)
 	require.Nil(t, err)
@@ -57,6 +59,7 @@ func TestServiceGetPreviewErrorsHandling(t *testing.T) {
 	service := NewPreviewService(renderer, cache)
 
 	bnrInfo := domain.BannerInfo{Username: "hurtki", BannerType: domain.TypeWide}
+	hash := "freferfre"
 	ctx := t.Context()
 
 	errorsFromRenderer := []error{
@@ -66,7 +69,7 @@ func TestServiceGetPreviewErrorsHandling(t *testing.T) {
 	}
 
 	for _, er := range errorsFromRenderer {
-		cache.EXPECT().Get(bnrInfo).Return(nil, false)
+		cache.EXPECT().Get(bnrInfo).Return(nil, hash, false)
 		renderer.EXPECT().RenderPreview(ctx, bnrInfo).Return(nil, er)
 
 		bnr, err := service.GetPreview(ctx, bnrInfo)

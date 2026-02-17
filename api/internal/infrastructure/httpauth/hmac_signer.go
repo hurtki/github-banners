@@ -1,4 +1,4 @@
-package renderer_http
+package httpauth
 
 import (
 	"crypto/hmac"

@@ -81,12 +81,13 @@ func (m *MockCache) EXPECT() *MockCacheMockRecorder {
 }
 
 // Get mocks base method.
-func (m *MockCache) Get(arg0 domain.BannerInfo) (*domain.Banner, bool) {
+func (m *MockCache) Get(arg0 domain.BannerInfo) (*domain.Banner, string, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", arg0)
 	ret0, _ := ret[0].(*domain.Banner)
-	ret1, _ := ret[1].(bool)
-	return ret0, ret1
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(bool)
+	return ret0, ret1, ret2
 }
 
 // Get indicates an expected call of Get.
@@ -96,7 +97,7 @@ func (mr *MockCacheMockRecorder) Get(arg0 any) *gomock.Call {
 }
 
 // Set mocks base method.
-func (m *MockCache) Set(arg0 domain.BannerInfo, arg1 *domain.Banner) {
+func (m *MockCache) Set(arg0 string, arg1 *domain.Banner) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Set", arg0, arg1)
 }
