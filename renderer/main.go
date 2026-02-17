@@ -7,8 +7,8 @@ import (
 
 	kafka_config "github.com/hurtki/github-banners/renderer/internal/config/kafka"
 	"github.com/hurtki/github-banners/renderer/internal/handlers"
-	"github.com/hurtki/github-banners/renderer/internal/infrastrcture/kafka"
-	kafka_cg_handlers "github.com/hurtki/github-banners/renderer/internal/infrastrcture/kafka/cg_handlers"
+	"github.com/hurtki/github-banners/renderer/internal/infrastructure/kafka"
+	kafka_cg_handlers "github.com/hurtki/github-banners/renderer/internal/infrastructure/kafka/cg_handlers"
 	"github.com/hurtki/github-banners/renderer/internal/logger"
 )
 

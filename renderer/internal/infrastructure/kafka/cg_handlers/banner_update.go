@@ -41,21 +41,27 @@ func (h *BannerUpdateCGHandler) Cleanup(sess sarama.ConsumerGroupSession) error 
 
 func (h *BannerUpdateCGHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	t := time.NewTicker(h.cfg.AutoCommitInterval)
+	defer t.Stop()
+
+	msgs := make([]*sarama.ConsumerMessage, 0, h.cfg.EventsBatchSize)
 
 	for {
-		ctx, cancel := context.WithTimeout(context.Background(), h.cfg.BatchMaxWait)
-		msgs := make([]*sarama.ConsumerMessage, 0, h.cfg.EventsBatchSize)
+		ctx, cancel := context.WithTimeout(session.Context(), h.cfg.BatchMaxWait)
 
 		for range h.cfg.EventsBatchSize {
 			select {
+			// if session context done, exiting immediatly
 			case <-session.Context().Done():
 				cancel()
 				return nil
+			// autocommit
 			case <-t.C:
 				cancel()
 				session.Commit()
 				continue
+			// one batch max wait time exceeded
 			case <-ctx.Done():
+			// new message
 			case message := <-claim.Messages():
 				msgs = append(msgs, message)
 			}
@@ -65,18 +71,24 @@ func (h *BannerUpdateCGHandler) ConsumeClaim(session sarama.ConsumerGroupSession
 
 		wg := sync.WaitGroup{}
 		for _, msg := range msgs {
-			wg.Go(func() {
+
+			wg.Add(1)
+			go func(m *sarama.ConsumerMessage) {
+				defer wg.Done()
 				err := h.handler.Handle(session.Context(), handlers.Message{
-					Key:   msg.Key,
-					Value: msg.Value,
+					Key:   m.Key,
+					Value: m.Value,
 				},
 				)
 				if err != nil {
 					h.logger.Error("can't proceed message", "err", err)
 				}
-				session.MarkMessage(msg, "")
-			})
+				session.MarkMessage(m, "")
+			}(msg)
+
 		}
+		// clean slice of messages after usage for a new batch
+		msgs = msgs[:0]
 		wg.Wait()
 	}
 }
