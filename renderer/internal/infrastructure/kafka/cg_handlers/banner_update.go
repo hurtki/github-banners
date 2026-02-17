@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/IBM/sarama"
-	kafka_config "github.com/hurtki/github-banners/renderer/internal/config/kafka"
+	config "github.com/hurtki/github-banners/renderer/internal/config"
 	"github.com/hurtki/github-banners/renderer/internal/handlers"
 	"github.com/hurtki/github-banners/renderer/internal/logger"
 )
@@ -16,12 +16,12 @@ type UpdateBannerHandler interface {
 }
 
 type BannerUpdateCGHandler struct {
-	cfg     kafka_config.KafkaCGHandlerConfig
+	cfg     config.KafkaCGHandlerConfig
 	logger  logger.Logger
 	handler UpdateBannerHandler
 }
 
-func NewBannerUpdateCGHandler(logger logger.Logger, handler UpdateBannerHandler, cfg kafka_config.KafkaCGHandlerConfig) *BannerUpdateCGHandler {
+func NewBannerUpdateCGHandler(logger logger.Logger, handler UpdateBannerHandler, cfg config.KafkaCGHandlerConfig) *BannerUpdateCGHandler {
 	return &BannerUpdateCGHandler{
 		logger:  logger.With("service", "banner-update-cg-handler"),
 		handler: handler,

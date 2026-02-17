@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/IBM/sarama"
-	kafka_config "github.com/hurtki/github-banners/renderer/internal/config/kafka"
+	config "github.com/hurtki/github-banners/renderer/internal/config"
 	"github.com/hurtki/github-banners/renderer/internal/logger"
 )
 
@@ -19,7 +19,7 @@ type KafkaConsumerGroup struct {
 	logger logger.Logger
 }
 
-func NewKafkaConsumerGroup(ctx context.Context, logger logger.Logger, cfg kafka_config.KafkaConsumerConfig) (*KafkaConsumerGroup, error) {
+func NewKafkaConsumerGroup(ctx context.Context, logger logger.Logger, cfg config.KafkaConsumerConfig) (*KafkaConsumerGroup, error) {
 	fn := "internal.infrastructure.kafka.NewKafkaConsumerGroup"
 
 	var cg sarama.ConsumerGroup
@@ -38,7 +38,7 @@ func NewKafkaConsumerGroup(ctx context.Context, logger logger.Logger, cfg kafka_
 	}
 
 	return &KafkaConsumerGroup{
-		ctx: ctx,
+		ctx:    ctx,
 		cg:     cg,
 		logger: logger,
 	}, nil

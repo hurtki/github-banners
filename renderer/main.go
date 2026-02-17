@@ -6,7 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	kafka_config "github.com/hurtki/github-banners/renderer/internal/config/kafka"
+	"github.com/hurtki/github-banners/renderer/internal/config"
 	"github.com/hurtki/github-banners/renderer/internal/handlers"
 	"github.com/hurtki/github-banners/renderer/internal/infrastructure/kafka"
 	kafka_cg_handlers "github.com/hurtki/github-banners/renderer/internal/infrastructure/kafka/cg_handlers"
@@ -17,14 +17,16 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	logger := logger.NewLogger("info", "json")
+	cfg := config.Load()
+
+	logger := logger.NewLogger(cfg.LogLevel, cfg.LogFormat)
 	logger.Info("started renderer service")
 	bannerUpdateHandler := handlers.NewBannerUpdateHandler(logger)
 
-	cgHandlerCfg := kafka_config.NewKafkaCGHandlerConfig()
+	cgHandlerCfg := config.NewKafkaCGHandlerConfig()
 
 	cgBannerUpdateHandler := kafka_cg_handlers.NewBannerUpdateCGHandler(logger, bannerUpdateHandler, cgHandlerCfg)
-	kafkaConsumerCfg := kafka_config.NewKafkaConsumerConfig()
+	kafkaConsumerCfg := config.NewKafkaConsumerConfig()
 
 	cs, err := kafka.NewKafkaConsumerGroup(ctx, logger, kafkaConsumerCfg)
 	if err != nil {
