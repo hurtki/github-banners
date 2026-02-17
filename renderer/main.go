@@ -3,7 +3,8 @@ package main
 import (
 	"context"
 	"os"
-	"time"
+	"os/signal"
+	"syscall"
 
 	kafka_config "github.com/hurtki/github-banners/renderer/internal/config/kafka"
 	"github.com/hurtki/github-banners/renderer/internal/handlers"
@@ -33,5 +34,9 @@ func main() {
 
 	cs.RegisterCGHandler([]string{"banner-update"}, cgBannerUpdateHandler)
 
-	time.Sleep(time.Hour)
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	<-quit
+	logger.Info("shutting down, interrupt signal received")
+	// base context cancel in defer
 }
