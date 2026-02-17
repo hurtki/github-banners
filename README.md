@@ -107,7 +107,7 @@ CORS_ORIGINS=example.com,www.example.com
 GITHUB_TOKENS=ghp_token1,ghp_token2
 
 # Rate limiting & Cache
-RATE_LIMIT_RPS=10 
+RATE_LIMIT_RPS=10
 CACHE_TTL=5m
 REQUEST_TIMEOUT=10s
 
@@ -121,6 +121,17 @@ POSTGRES_PASSWORD=your_secure_password
 POSTGRES_DB=github_banners
 DB_HOST=api-psgr
 PGPORT=5432
+```
+
+`renderer/.env`:
+
+```env
+# DEBUG/INFO/WARN/ERROR
+LOG_LEVEL=INFO
+# text/json
+LOG_FORMAT=json
+# separated by comma list of broker instances
+KAFKA_BROKERS_ADDRS=kafka:9092
 ```
 
 **3. Start services**
