@@ -48,7 +48,7 @@ services:
     networks:
       - banners-net
   kafka:
-    image: apache/kafka:latest
+    image: apache/kafka:4.2.0
     container_name: kafka
     environment:
       KAFKA_NODE_ID: 1
