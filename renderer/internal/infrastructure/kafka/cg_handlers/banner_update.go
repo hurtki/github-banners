@@ -56,6 +56,7 @@ func (h *BannerUpdateCGHandler) ConsumeClaim(session sarama.ConsumerGroupSession
 				return nil
 			// autocommit
 			case <-t.C:
+				h.logger.Debug("auto commit executed", "partition", claim.Partition(), "topic", claim.Topic(), "offset", claim.HighWaterMarkOffset())
 				cancel()
 				session.Commit()
 				continue
@@ -66,6 +67,7 @@ func (h *BannerUpdateCGHandler) ConsumeClaim(session sarama.ConsumerGroupSession
 				msgs = append(msgs, message)
 			}
 		}
+		h.logger.Debug("filled a new batch of events", "size", len(msgs), "partition", claim.Partition(), "topic", claim.Topic())
 
 		cancel()
 

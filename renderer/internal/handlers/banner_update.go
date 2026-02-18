@@ -31,7 +31,7 @@ func (h *BannerUpdateHandler) Handle(ctx context.Context, msg Message) error {
 		return fmt.Errorf("can't unmarshal msg's value as BannerUpdateEvent, %w", err)
 	}
 
-	h.logger.Info("Handling new event, key: %s value: $s", msg.Key, event.String())
+	h.logger.Debug("Handling new event, key: %s", "key", msg.Key)
 
 	// return h.usecase.Update(ctx, domain.BannerInfo{})
 	return nil
