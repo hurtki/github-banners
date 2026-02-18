@@ -32,6 +32,7 @@ services:
   # one instance of rendere service
   renderer:
     build: ./renderer/
+    env_file: ./renderer/.env
     image: renderer
     container_name: renderer
     networks:
