@@ -16,15 +16,15 @@ GitHub Banners fetches user data from the GitHub API, calculates aggregated stat
 
 ### Key Features
 
-| Feature | Description |
-|---------|-------------|
+| Feature                    | Description                                                                      |
+| -------------------------- | -------------------------------------------------------------------------------- |
 | **Statistics Aggregation** | Fetches and calculates total repositories, stars, forks, and language breakdowns |
-| **Dynamic SVG Banners** | Renders customizable banners with real-time user statistics |
-| **Multi-Token Support** | Supports multiple GitHub tokens for higher rate limits with automatic rotation |
-| **Smart Caching** | Multi-layer caching (in-memory + PostgreSQL) with soft/hard TTL strategy |
-| **Background Refresh** | Automatically refreshes statistics for tracked users |
-| **Event-Driven** | Kafka-based communication between microservices |
-| **Secure Communication** | HMAC-based request signing for inter-service authentication |
+| **Dynamic SVG Banners**    | Renders customizable banners with real-time user statistics                      |
+| **Multi-Token Support**    | Supports multiple GitHub tokens for higher rate limits with automatic rotation   |
+| **Smart Caching**          | Multi-layer caching (in-memory + PostgreSQL) with soft/hard TTL strategy         |
+| **Background Refresh**     | Automatically refreshes statistics for tracked users                             |
+| **Event-Driven**           | Kafka-based communication between microservices                                  |
+| **Secure Communication**   | HMAC-based request signing for inter-service authentication                      |
 
 ---
 
@@ -34,16 +34,16 @@ GitHub Banners fetches user data from the GitHub API, calculates aggregated stat
   <img src="https://skillicons.dev/icons?i=go,postgres,kafka,docker&theme=dark" alt="Tech Stack" />
 </p>
 
-| Component | Technology |
-|-----------|------------|
-| **Language** | Go 1.25 |
-| **HTTP Router** | [chi/v5](https://github.com/go-chi/chi) |
-| **Database** | PostgreSQL 15 |
-| **Message Queue** | Apache Kafka |
-| **GitHub API** | [go-github/v81](https://github.com/google/go-github) |
-| **Migrations** | [goose/v3](https://github.com/pressly/goose) |
-| **Caching** | [go-cache](https://github.com/patrickmn/go-cache) |
-| **Containerization** | Docker / Docker Compose |
+| Component            | Technology                                           |
+| -------------------- | ---------------------------------------------------- |
+| **Language**         | Go 1.25.5                                            |
+| **HTTP Router**      | [chi/v5](https://github.com/go-chi/chi)              |
+| **Database**         | PostgreSQL 15                                        |
+| **Message Queue**    | Apache Kafka ( Kraft manager )                       |
+| **GitHub API**       | [go-github/v81](https://github.com/google/go-github) |
+| **Migrations**       | [goose/v3](https://github.com/pressly/goose)         |
+| **Caching**          | [go-cache](https://github.com/patrickmn/go-cache)    |
+| **Containerization** | Docker / Docker Compose                              |
 
 ---
 
@@ -51,29 +51,28 @@ GitHub Banners fetches user data from the GitHub API, calculates aggregated stat
 
 <img width="1679" height="856" alt="image" src="https://github.com/user-attachments/assets/dfb60c1c-c3f2-4ff2-bacb-f51008c8e9bd" />
 
+### Github Stats Caching Strategy
 
-### Caching Strategy
-
-| Layer | TTL | Behavior |
-|-------|-----|----------|
-| **Soft TTL** | 10 minutes | Serves cached data, triggers background refresh |
-| **Hard TTL** | 24 hours | Maximum cache lifetime |
-| **In-Memory** | Configurable | Fast access via go-cache |
-| **PostgreSQL** | Persistent | Durable storage for cached data |
+| Layer          | TTL          | Behavior                                             |
+| -------------- | ------------ | ---------------------------------------------------- |
+| **Soft TTL**   | 10 minutes   | Serves cached data                                   |
+| **Hard TTL**   | 24 hours     | Maximum cache lifetime , triggers background refresh |
+| **In-Memory**  | Configurable | Fast access via go-cache                             |
+| **PostgreSQL** | Persistent   | Durable storage for cached data                      |
 
 ### Database Schema
 
-| Table | Description |
-|-------|-------------|
-| `users` | GitHub user profile data |
-| `repositories` | Repository data linked to users |
-| `banners` | Banner configurations and storage paths |
+| Table          | Description                             |
+| -------------- | --------------------------------------- |
+| `banners`      | Banner configurations and storage paths |
+| `users`        | GitHub user profile data                |
+| `repositories` | Repository data linked to users         |
 
 ---
 
 ## Quick Start
 
-### Prerequisites
+### Requirements
 
 - Go 1.25+
 - Docker & Docker Compose
@@ -91,11 +90,15 @@ cd github-banners
 **2. Configure environment variables**
 
 Root `.env`:
+
 ```env
 API_INTERNAL_SERVER_PORT=80
+# Service authentication
+SERVICES_SECRET_KEY=your_secret_key
 ```
 
 `api/.env`:
+
 ```env
 # CORS
 CORS_ORIGINS=example.com,www.example.com
@@ -112,9 +115,6 @@ REQUEST_TIMEOUT=10s
 LOG_LEVEL=DEBUG
 LOG_FORMAT=json
 
-# Service authentication
-SERVICES_SECRET_KEY=your_secret_key
-
 # PostgreSQL
 POSTGRES_USER=github_banners
 POSTGRES_PASSWORD=your_secure_password
@@ -123,10 +123,23 @@ DB_HOST=api-psgr
 PGPORT=5432
 ```
 
+`renderer/.env`:
+
+```env
+# DEBUG/INFO/WARN/ERROR
+LOG_LEVEL=INFO
+# text/json
+LOG_FORMAT=json
+# separated by comma list of broker instances
+KAFKA_BROKERS_ADDRS=kafka:9092
+```
+
 **3. Start services**
 
 ```bash
 docker-compose up --build
+# Detached mode ( only build logs )
+docker-compose up --build -d
 ```
 
 ### Development
@@ -141,53 +154,25 @@ cd api && go run main.go
 
 ---
 
-## Configuration Reference
-
-### Application Settings
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PORT` | `8080` | Server port |
-| `CORS_ORIGINS` | `*` | Allowed CORS origins |
-| `GITHUB_TOKENS` | - | GitHub API tokens (comma-separated) |
-| `RATE_LIMIT_RPS` | `10` | Rate limit (requests/second) |
-| `CACHE_TTL` | `5m` | Default cache TTL |
-| `REQUEST_TIMEOUT` | `10s` | HTTP request timeout |
-| `LOG_LEVEL` | `info` | debug / info / warn / error |
-| `LOG_FORMAT` | `json` | json / text |
-| `SERVICES_SECRET_KEY` | `1234` | HMAC signing key |
-
-### Database Settings
-
-| Variable | Description |
-|----------|-------------|
-| `POSTGRES_USER` | Database user |
-| `POSTGRES_PASSWORD` | Database password |
-| `POSTGRES_DB` | Database name |
-| `DB_HOST` | Database host |
-| `PGPORT` | Database port |
-
----
-
 ## Services
 
-| Service | Port | Description |
-|---------|------|-------------|
-| `api` | 80 | Main API service |
-| `api-psgr` | 5432 | PostgreSQL database |
-| `renderer` | - | Banner rendering service |
-| `storage` | - | Banner storage service |
-| `kafka` | 9092 | Apache Kafka broker |
-| `zookeeper` | 2181 | Kafka coordination |
+| Service    | Port             | Description              |
+| ---------- | ---------------- | ------------------------ |
+| `api`      | 80 ( public )    | Main API service         |
+| `api-psgr` | 5432 ( private ) | PostgreSQL database      |
+| `renderer` | -                | Banner rendering service |
+| `storage`  | -                | Banner storage service   |
+| `kafka`    | 9092 ( private ) | Apache Kafka broker      |
 
 ---
 
 ## API Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/banners/preview` | Get banner preview for a GitHub user |
-| `POST` | `/banners` | Create a new banner |
+| Method | Endpoint                              | Description                                                    |
+| ------ | ------------------------------------- | -------------------------------------------------------------- |
+| `GET`  | `[api-service]/banners/preview`       | Get banner preview for a GitHub user ( not fully implemented ) |
+| `POST` | `[api-service]/banners`               | Create a new banner ( not implemented )                        |
+| `GET`  | `[storage-service]/{banner-url-path}` | Get long term banner ( not implemented )                       |
 
 ---
 
@@ -197,7 +182,7 @@ cd api && go run main.go
 github-banners/
 ├── api/                          # Main API service
 │   ├── internal/
-│   │   ├── app/user_stats/       # Background worker
+│   │   ├── app/user_stats/       # Background stats updating worker
 │   │   ├── cache/                # In-memory cache
 │   │   ├── config/               # Configuration
 │   │   ├── domain/               # Business logic
@@ -211,10 +196,17 @@ github-banners/
 │   │   │   ├── renderer/         # Renderer client
 │   │   │   └── server/           # HTTP server
 │   │   ├── migrations/           # SQL migrations
-│   │   └── repo/                 # Data repositories
+│   │   └── repo/                 # Storages
+│   │      ├── banners/           # long term banners storage
+│   │      ├── github_user_data/  # github data
 │   └── main.go
-├── renderer/                     # Banner rendering service
-├── storage/                      # Banner storage service
+├── renderer/                     # Banner rendering service ( partially implemented )
+│   ├── internal/
+│   │   ├── infrastructure/       # External integrations
+│   │   │   ├── kafka/            # kafka consumer group logic
+│   │   ├── handlers/       # Evevnts handling and HTTP requests handling logic
+│   └── main.go
+├── storage/                      # Banner storage service ( not implemented )
 ├── docker-compose.yaml
 └── run_tests.sh
 ```

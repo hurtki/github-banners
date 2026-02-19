@@ -17,17 +17,17 @@ import (
 
 // Renderer is an infrastrcture layer port, to request renderer service using http
 type Renderer struct {
-	client          *http.Client
-	logger          logger.Logger
-	baseURL 		string
+	client  *http.Client
+	logger  logger.Logger
+	baseURL string
 }
 
 // NewRenderer initializes new Renderer that will use given httpClient, logger, and previewEndpoint
 // previewEndpoint is an http/s endpoint (example https://renderer/preview/)
 func NewRenderer(httpClient *http.Client, logger logger.Logger, baseURL string) *Renderer {
 	return &Renderer{
-		client:          httpClient,
-		logger:          logger.With("service", "renderer-infra"),
+		client:  httpClient,
+		logger:  logger.With("service", "renderer-infra"),
 		baseURL: strings.TrimRight(baseURL, "/"),
 	}
 }

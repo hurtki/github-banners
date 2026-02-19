@@ -4,7 +4,7 @@ import "github.com/IBM/sarama"
 
 func NewProducerConfig() *sarama.Config {
 	cfg := sarama.NewConfig()
-	cfg.Version = sarama.V2_8_0_0
+	cfg.Version = sarama.V4_1_0_0
 
 	cfg.Producer.RequiredAcks = sarama.WaitForAll
 	cfg.Producer.Retry.Max = 5

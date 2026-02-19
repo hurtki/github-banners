@@ -1,6 +1,10 @@
 FROM "golang"
 
-WORKDIR /app/crud/
+WORKDIR /app/renderer/
+
+COPY go.mod go.sum ./
+
+RUN go mod download
 
 COPY . .
 

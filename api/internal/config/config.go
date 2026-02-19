@@ -24,7 +24,7 @@ type Config struct {
 
 	ServicesSecret string
 
-	StorageBaseURL string
+	StorageBaseURL  string
 	RendererBaseURL string
 }
 
@@ -42,17 +42,17 @@ func Load() *Config {
 	}
 
 	return &Config{
-		Port:           getEnv("PORT", "8080"),
-		CORSOrigins:    corsOrigins,
-		GithubTokens:   githubTokens,
-		RateLimitRPS:   getEnvAsInt("RATE_LIMIT_RPS", 10),
-		CacheTTL:       getEnvAsDuration("CACHE_TTL", 5*time.Minute),
-		RequestTimeout: getEnvAsDuration("REQUEST_TIMEOUT", 10*time.Second),
-		LogLevel:       getEnv("LOG_LEVEL", "info"),
-		LogFormat:      getEnv("LOG_FORMAT", "json"),
-		ServicesSecret: getEnv("SERVICES_SECRET_KEY", "1234"),
+		Port:            getEnv("PORT", "8080"),
+		CORSOrigins:     corsOrigins,
+		GithubTokens:    githubTokens,
+		RateLimitRPS:    getEnvAsInt("RATE_LIMIT_RPS", 10),
+		CacheTTL:        getEnvAsDuration("CACHE_TTL", 5*time.Minute),
+		RequestTimeout:  getEnvAsDuration("REQUEST_TIMEOUT", 10*time.Second),
+		LogLevel:        getEnv("LOG_LEVEL", "info"),
+		LogFormat:       getEnv("LOG_FORMAT", "json"),
+		ServicesSecret:  getEnv("SERVICES_SECRET_KEY", "1234"),
 		StorageBaseURL:  getEnv("STORAGE_BASE_URL", "http://storage/"),
-    	RendererBaseURL: getEnv("RENDERER_BASE_URL", "https://renderer/"),
+		RendererBaseURL: getEnv("RENDERER_BASE_URL", "https://renderer/"),
 	}
 }
 

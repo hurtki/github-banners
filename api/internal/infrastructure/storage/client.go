@@ -13,6 +13,7 @@ import (
 
 	"github.com/hurtki/github-banners/api/internal/logger"
 )
+
 type Client struct {
 	baseURL    string
 	httpClient *http.Client
@@ -44,13 +45,13 @@ func NewClient(baseURL string, httpClient *http.Client, logger logger.Logger) *C
 }
 
 func (c *Client) SaveBanner(ctx context.Context, bannerID string, svg string) (string, error) {
-   fn := "internal.infrastructure.storage.client.SaveBanner"
-   start := time.Now()
+	fn := "internal.infrastructure.storage.client.SaveBanner"
+	start := time.Now()
 
-   c.logger.Debug("saving banner to storage",
-	   "source", fn,
-	   "banner_id", bannerID,
-   )
+	c.logger.Debug("saving banner to storage",
+		"source", fn,
+		"banner_id", bannerID,
+	)
 
 	encoded := base64.StdEncoding.EncodeToString([]byte(svg))
 	reqBody := SaveRequest{
