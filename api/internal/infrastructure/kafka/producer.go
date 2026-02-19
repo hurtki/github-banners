@@ -35,6 +35,8 @@ func NewBannerProducer(brokers []string, topic string, cfg *sarama.Config, logge
 		return nil, fmt.Errorf("kafka producer init failed: %w", err)
 	}
 
+	logger.Info("initialized banner producer successfully", "brokers", brokers, "topic", topic, "source", fn)
+
 	return &BannerProducer{
 		producer: producer,
 		topic:    topic,

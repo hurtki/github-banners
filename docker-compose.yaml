@@ -68,10 +68,10 @@ services:
     networks:
       - kafka-net
     healthcheck:
-      test: "sh /opt/kafka/bin/kafka-topics.sh --list --bootstrap-server localhost:9092"
-      interval: 1s
-      timeout: 1s
-      retries: 30
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     volumes:
       - kafka-data:/var/lib/kafka/data
 volumes:
