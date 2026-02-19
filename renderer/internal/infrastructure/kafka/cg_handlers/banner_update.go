@@ -40,8 +40,21 @@ func (h *BannerUpdateCGHandler) Cleanup(sess sarama.ConsumerGroupSession) error 
 }
 
 func (h *BannerUpdateCGHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
-	t := time.NewTicker(h.cfg.AutoCommitInterval)
-	defer t.Stop()
+	// start auto commit gorutine
+	go func() {
+		t := time.NewTicker(h.cfg.AutoCommitInterval)
+		defer t.Stop()
+
+		for {
+			select {
+			case <-session.Context().Done():
+				return
+			case <-t.C:
+				h.logger.Debug("auto commit executed", "partition", claim.Partition(), "topic", claim.Topic(), "offset", claim.HighWaterMarkOffset())
+				session.Commit()
+			}
+		}
+	}()
 
 	msgs := make([]*sarama.ConsumerMessage, 0, h.cfg.EventsBatchSize)
 
@@ -54,12 +67,6 @@ func (h *BannerUpdateCGHandler) ConsumeClaim(session sarama.ConsumerGroupSession
 			case <-session.Context().Done():
 				cancel()
 				return nil
-			// autocommit
-			case <-t.C:
-				h.logger.Debug("auto commit executed", "partition", claim.Partition(), "topic", claim.Topic(), "offset", claim.HighWaterMarkOffset())
-				cancel()
-				session.Commit()
-				continue
 			// one batch max wait time exceeded
 			case <-ctx.Done():
 			// new message

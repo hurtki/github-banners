@@ -3,6 +3,7 @@ package kafka
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/IBM/sarama"
 	config "github.com/hurtki/github-banners/renderer/internal/config"
@@ -10,7 +11,8 @@ import (
 )
 
 const (
-	kafkaConnectionTries = 10
+	kafkaConnectionTries            = 10
+	kafkaConnectionTimeBetweenTries = time.Second
 )
 
 type KafkaConsumerGroup struct {
@@ -27,11 +29,16 @@ func NewKafkaConsumerGroup(ctx context.Context, logger logger.Logger, cfg config
 	for i := range kafkaConnectionTries {
 		cg, err = sarama.NewConsumerGroup(cfg.Addrs, "banner-update-cg", cfg.SaramaCfg)
 		if err != nil {
-			logger.Warn("can't initialize consumer group", "try", i+1, "source", fn)
+			logger.Warn("can't initialize consumer group", "try", i+1, "source", fn, "addrs", cfg.Addrs)
+			if i == (kafkaConnectionTries - 1) {
+				break
+			}
+			time.Sleep(kafkaConnectionTimeBetweenTries)
 			continue
 		} else {
 			break
 		}
+
 	}
 	if err != nil {
 		return nil, fmt.Errorf("kafka consumer group init failed: %w", err)
