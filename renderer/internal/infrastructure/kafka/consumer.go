@@ -44,6 +44,8 @@ func NewKafkaConsumerGroup(ctx context.Context, logger logger.Logger, cfg config
 		return nil, fmt.Errorf("kafka consumer group init failed: %w", err)
 	}
 
+	logger.Info("initialized consumer group successfully", "addrs", cfg.Addrs, "source", fn)
+
 	return &KafkaConsumerGroup{
 		ctx:    ctx,
 		cg:     cg,
