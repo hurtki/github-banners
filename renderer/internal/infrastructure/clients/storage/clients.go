@@ -53,18 +53,21 @@ func (c *Client) SaveBanner(ctx context.Context, bannerID string, svg string) (s
 
 	bodyBytes, err := json.Marshal(reqBody)
 	if err != nil {
+		c.logger.Error("failed to marshal storage request", "err", err, "fn", fn)
 		return "", fmt.Errorf("%s: marshal request: %w", fn, err)
 	}
 
 	url := c.baseURL + "/banners"
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes))
 	if err != nil {
+		c.logger.Error("failed to create storage request", "err", err, "fn", fn)
 		return "", fmt.Errorf("%s: create request: %w", fn, err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
+		c.logger.Error("storage request execution failed (network/timeout)", "err", err, "fn", fn)
 		return "", fmt.Errorf("%s: do request: %w", fn, err)
 	}
 	
@@ -83,7 +86,7 @@ func (c *Client) SaveBanner(ctx context.Context, bannerID string, svg string) (s
 		return "", fmt.Errorf("%s: decode response: %w", fn, err)
 	}
 
-	c.logger.Info("banner stored successfully", "banner_id", bannerID, "url", saveResp.URL, "duration", duration)
+	c.logger.Debug("banner stored successfully", "banner_id", bannerID, "url", saveResp.URL, "duration", duration)
 
 	return saveResp.URL, nil
 }
