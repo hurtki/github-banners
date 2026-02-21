@@ -25,6 +25,8 @@ services:
     image: postgres:15
     env_file: ./api/.env
     container_name: api-psgr
+    environment:
+      SERVICES_SECRET_KEY: "${SERVICES_SECRET_KEY}"
     networks:
       - api-net
     volumes:
@@ -68,7 +70,11 @@ services:
     networks:
       - kafka-net
     healthcheck:
-      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1",
+        ]
       interval: 5s
       timeout: 5s
       retries: 10
