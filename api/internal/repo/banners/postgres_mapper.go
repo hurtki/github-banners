@@ -1,4 +1,4 @@
-package banners
+package banners_repo
 
 import (
 	"github.com/hurtki/github-banners/api/internal/domain"

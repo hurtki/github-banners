@@ -1,4 +1,4 @@
-package github_user_data
+package github_data_repo
 
 import (
 	"database/sql"
@@ -12,5 +12,5 @@ type GithubDataPsgrRepo struct {
 }
 
 func NewGithubDataPsgrRepo(db *sql.DB, logger logger.Logger) *GithubDataPsgrRepo {
-	return &GithubDataPsgrRepo{db: db, logger: logger}
+	return &GithubDataPsgrRepo{db: db, logger: logger.With("service", "github-data-repo")}
 }
