@@ -11,6 +11,7 @@ services:
     environment:
       PORT: "$API_INTERNAL_SERVER_PORT"
       SERVICES_SECRET_KEY: "$SERVICES_SECRET_KEY"
+      STORAGE_BASE_URL: "$STORAGE_BASE_URL"
     networks:
       - banners-net
       - api-net
@@ -35,6 +36,9 @@ services:
     env_file: ./renderer/.env
     image: renderer
     container_name: renderer
+    environment:
+      SERVICES_SECRET_KEY: "${SERVICES_SECRET_KEY}"
+      STORAGE_BASE_URL: "$STORAGE_BASE_URL"
     networks:
       - banners-net
       - kafka-net
@@ -68,7 +72,11 @@ services:
     networks:
       - kafka-net
     healthcheck:
-      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1",
+        ]
       interval: 5s
       timeout: 5s
       retries: 10

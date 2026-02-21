@@ -26,10 +26,10 @@ type Signer interface {
 // and use clock as part of paylaod ( use time.Now() )
 func NewAuthHTTPRoundTripper(serviceName string, signer Signer, clock func() time.Time) *SigningRoundTripper {
 	if signer == nil {
-		panic("signer interface can't be nil, in NewRendererAuthHTTPRoundTripper")
+		panic("signer interface can't be nil, in NewAuthHTTPRoundTripper")
 	}
 	if clock == nil {
-		panic("clock function can't be nil, in NewRendererAuthHTTPRoundTripper")
+		panic("clock function can't be nil, in NewAuthHTTPRoundTripper")
 	}
 	return &SigningRoundTripper{
 		base:        http.DefaultTransport,

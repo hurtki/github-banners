@@ -9,12 +9,18 @@ import (
 type Config struct {
 	LogLevel  string
 	LogFormat string
+
+	ServiceSecret string
+	StorageBaseURL string
 }
 
 func Load() *Config {
 	return &Config{
 		LogLevel:  getEnv("LOG_LEVEL", "info"),
 		LogFormat: getEnv("LOG_FORMAT", "json"),
+
+		ServiceSecret: getEnv("SERVICES_SECRET_KEY", "1234"),
+		StorageBaseURL: getEnv("STORAGE_BASE_URL", "http://localhost:8081"),
 	}
 }
 
