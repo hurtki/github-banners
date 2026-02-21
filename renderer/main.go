@@ -2,12 +2,16 @@ package main
 
 import (
 	"context"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/hurtki/github-banners/renderer/internal/config"
 	"github.com/hurtki/github-banners/renderer/internal/handlers"
+	"github.com/hurtki/github-banners/renderer/internal/infrastructure/clients/storage"
+	httpauth "github.com/hurtki/github-banners/renderer/internal/infrastructure/httpauth"
 	"github.com/hurtki/github-banners/renderer/internal/infrastructure/kafka"
 	kafka_cg_handlers "github.com/hurtki/github-banners/renderer/internal/infrastructure/kafka/cg_handlers"
 	"github.com/hurtki/github-banners/renderer/internal/logger"
@@ -21,7 +25,17 @@ func main() {
 
 	logger := logger.NewLogger(cfg.LogLevel, cfg.LogFormat)
 	logger.Info("started renderer service")
-	bannerUpdateHandler := handlers.NewBannerUpdateHandler(logger)
+
+	signer := httpauth.NewHMACSigner([]byte(cfg.ServiceSecret))
+
+	authTripper := httpauth.NewAuthHTTPRoundTripper("renderer-ms", signer, time.Now)
+	httpClient := &http.Client{
+		Transport : authTripper,
+		Timeout : time.Second * 15,
+	}
+
+	storageClient := storage.NewClient(cfg.StorageBaseURL, httpClient, logger)
+	bannerUpdateHandler := handlers.NewBannerUpdateHandler(logger, storageClient)
 
 	cgHandlerCfg := config.NewKafkaCGHandlerConfig()
 
