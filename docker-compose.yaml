@@ -76,7 +76,7 @@ services:
       - kafka-data:/var/lib/kafka/data
 volumes:
   pgdata:
-    name: postgres_db_crud
+    name: postgres_db_banners_api_ms
   kafka-data:
     name: kafka-data
 networks:

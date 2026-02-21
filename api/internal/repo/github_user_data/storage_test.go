@@ -1,4 +1,4 @@
-package github_user_data
+package github_data_repo
 
 import (
 	"context"

@@ -1,7 +1,5 @@
 package domain
 
-import "context"
-
 type BannerType int
 
 const (
@@ -31,10 +29,11 @@ type LTBannerInfo struct {
 	UrlPath string
 }
 
-type BannerMetadata struct {
+type LTBannerMetadata struct {
 	Username   string
 	BannerType BannerType
 	UrlPath    string
+	Active     bool
 }
 
 // Rendered banner
@@ -42,8 +41,4 @@ type Banner struct {
 	Username   string
 	BannerType BannerType
 	Banner     []byte
-}
-
-type Storage interface {
-	SaveBanner(ctx context.Context, bannerID string, svg string) (string, error)
 }

@@ -1,4 +1,4 @@
-package banners
+package banners_repo
 
 import (
 	"database/sql"
@@ -13,7 +13,7 @@ type PostgresRepo struct {
 
 func NewPostgresRepo(db *sql.DB, logger logger.Logger) *PostgresRepo {
 	if logger != nil {
-		logger = logger.With("repo", "banners")
+		logger = logger.With("repo", "banners-repo")
 	}
 	return &PostgresRepo{
 		db:     db,
