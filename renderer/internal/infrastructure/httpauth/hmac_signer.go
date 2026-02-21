@@ -14,7 +14,7 @@ func NewHMACSigner(secret []byte) *HMACSigner {
 	if len(secret) == 0 {
 		panic("secret length in NewHMACSigner shouldn't be 0")
 	}
-	return &HMACSigner{secret: []byte(secret)}
+	return &HMACSigner{secret: secret}
 }
 
 func (s *HMACSigner) Sign(data []byte) string {
