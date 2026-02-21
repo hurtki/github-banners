@@ -24,7 +24,7 @@ import (
 	"github.com/hurtki/github-banners/api/internal/infrastructure/storage"
 	log "github.com/hurtki/github-banners/api/internal/logger"
 	"github.com/hurtki/github-banners/api/internal/migrations"
-	"github.com/hurtki/github-banners/api/internal/repo/github_user_data"
+	github_data_repo "github.com/hurtki/github-banners/api/internal/repo/github_user_data"
 )
 
 func main() {
@@ -62,7 +62,7 @@ func main() {
 		logger.Error("failed to run migrations", "err", err.Error())
 		os.Exit(1)
 	}
-	repo := github_user_data.NewGithubDataPsgrRepo(db, logger)
+	repo := github_data_repo.NewGithubDataPsgrRepo(db, logger)
 
 	// Create stats service (domain service with cache)
 	statsService := userstats.NewUserStatsService(repo, githubFetcher, statsCache)
@@ -89,7 +89,7 @@ func main() {
 		Transport: storageAuthRT,
 	}
 
-	storageClient := storage.NewClient(
+	_ = storage.NewClient(
 		cfg.StorageBaseURL,
 		storageHTTPClient,
 		logger,

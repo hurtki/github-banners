@@ -32,7 +32,7 @@ func newHeader(headers map[string]string) http.Header {
 func TestRenderer_RenderPreview(t *testing.T) {
 	httpmock.Activate(t)
 
-	apiUlr := "https://renderer/preview"
+	rendererBaseUrl := "https://renderer"
 	baseBodyBytes := []byte("<svg></svg>")
 
 	tests := []struct {
@@ -40,7 +40,6 @@ func TestRenderer_RenderPreview(t *testing.T) {
 		// Named input parameters for receiver constructor.
 		httpClient   *http.Client
 		logger       logger.Logger
-		endpoint     string
 		responseBody string
 		httpResponse *http.Response
 		// Named input parameters for target function.
@@ -52,7 +51,6 @@ func TestRenderer_RenderPreview(t *testing.T) {
 			name:       "base",
 			httpClient: http.DefaultClient,
 			logger:     logger.NewLogger("info", "json"),
-			endpoint:   apiUlr,
 			httpResponse: &http.Response{
 				StatusCode: http.StatusOK,
 				Header: newHeader(map[string]string{
@@ -68,7 +66,6 @@ func TestRenderer_RenderPreview(t *testing.T) {
 			name:       "wrong-format",
 			httpClient: http.DefaultClient,
 			logger:     logger.NewLogger("info", "json"),
-			endpoint:   apiUlr,
 			httpResponse: &http.Response{
 				StatusCode: http.StatusOK,
 				Header: newHeader(map[string]string{
@@ -84,7 +81,6 @@ func TestRenderer_RenderPreview(t *testing.T) {
 			name:       "bad-request-status",
 			httpClient: http.DefaultClient,
 			logger:     logger.NewLogger("info", "json"),
-			endpoint:   apiUlr,
 			httpResponse: &http.Response{
 				StatusCode: http.StatusBadRequest,
 				Header:     newHeader(map[string]string{}),
@@ -97,10 +93,10 @@ func TestRenderer_RenderPreview(t *testing.T) {
 	}
 	for _, tt := range tests {
 		httpmock.Reset()
-		httpmock.RegisterResponder("POST", tt.endpoint, httpmock.ResponderFromResponse(tt.httpResponse))
+		httpmock.RegisterResponder("POST", rendererBaseUrl+"/preview", httpmock.ResponderFromResponse(tt.httpResponse))
 
 		t.Run(tt.name, func(t *testing.T) {
-			c := renderer.NewRenderer(tt.httpClient, tt.logger, tt.endpoint)
+			c := renderer.NewRenderer(tt.httpClient, tt.logger, rendererBaseUrl)
 			got, gotErr := c.RenderPreview(context.Background(), tt.bannerInfo)
 			require.Equal(t, tt.wantedErr, gotErr)
 			require.Equal(t, tt.want, got)

@@ -23,7 +23,7 @@ type Renderer struct {
 }
 
 // NewRenderer initializes new Renderer that will use given httpClient, logger, and previewEndpoint
-// previewEndpoint is an http/s endpoint (example https://renderer/preview/)
+// previewEndpoint is an http/s renderer base url (example https://renderer/)
 func NewRenderer(httpClient *http.Client, logger logger.Logger, baseURL string) *Renderer {
 	return &Renderer{
 		client:  httpClient,
@@ -48,7 +48,7 @@ func (c *Renderer) RenderPreview(ctx context.Context, bannerInfo domain.BannerIn
 	timeoutContext, cancel := context.WithTimeout(ctx, requestTimeout)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(timeoutContext, "POST", c.baseURL+"/preview/", bytes.NewReader(reqBody))
+	req, err := http.NewRequestWithContext(timeoutContext, "POST", c.baseURL+"/preview", bytes.NewReader(reqBody))
 	if err != nil {
 		c.logger.Error("unexpected error when preparing request", "source", fn, "err", err)
 		return nil, domain.ErrUnavailable
