@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hurtki/github-banners/renderer/internal/domain"
 	"github.com/hurtki/github-banners/renderer/internal/logger"
 )
 
@@ -54,21 +55,21 @@ func (c *Client) SaveBanner(ctx context.Context, bannerID string, svg string) (s
 	bodyBytes, err := json.Marshal(reqBody)
 	if err != nil {
 		c.logger.Error("failed to marshal storage request", "err", err, "fn", fn)
-		return "", fmt.Errorf("%s: marshal request: %w", fn, err)
+		return "", fmt.Errorf("%s: marshal request: %w, %w", fn, err, domain.ErrUnavailable)
 	}
 
 	url := c.baseURL + "/banners"
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes))
 	if err != nil {
 		c.logger.Error("failed to create storage request", "err", err, "fn", fn)
-		return "", fmt.Errorf("%s: create request: %w", fn, err)
+		return "", fmt.Errorf("%s: create request: %w, %w", fn, err, domain.ErrUnavailable)
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		c.logger.Error("storage request execution failed (network/timeout)", "err", err, "fn", fn)
-		return "", fmt.Errorf("%s: do request: %w", fn, err)
+		return "", fmt.Errorf("%s: do request: %w, %w", fn, err, domain.ErrUnavailable)
 	}
 	
 	defer resp.Body.Close()
@@ -78,12 +79,12 @@ func (c *Client) SaveBanner(ctx context.Context, bannerID string, svg string) (s
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		respBody, _ := io.ReadAll(resp.Body)
 		c.logger.Error("storage upload failed","status", resp.StatusCode, "banner_id", bannerID, "body", string(respBody), "duration", duration)
-		return "", fmt.Errorf("storage returned status %d", resp.StatusCode)
+		return "", fmt.Errorf("storage returned status %d, %w", resp.StatusCode, domain.ErrUnavailable)
 	}
 
 	var saveResp SaveResponse
 	if err := json.NewDecoder(resp.Body).Decode(&saveResp); err != nil {
-		return "", fmt.Errorf("%s: decode response: %w", fn, err)
+		return "", fmt.Errorf("%s: decode response: %w, %w", fn, err, domain.ErrUnavailable)
 	}
 
 	c.logger.Debug("banner stored successfully", "banner_id", bannerID, "url", saveResp.URL, "duration", duration)
