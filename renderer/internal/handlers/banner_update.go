@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/hurtki/github-banners/renderer/internal/domain"
+	"github.com/hurtki/github-banners/renderer/internal/infrastructure/clients/storage"
 	"github.com/hurtki/github-banners/renderer/internal/logger"
 )
 
@@ -16,11 +17,13 @@ type BannerUpdateUsecase interface {
 type BannerUpdateHandler struct {
 	logger logger.Logger
 	// usecase BannerUpdateUsecase
+	storageClient *storage.Client
 }
 
-func NewBannerUpdateHandler(logger logger.Logger) *BannerUpdateHandler {
+func NewBannerUpdateHandler(logger logger.Logger, storageClient *storage.Client) *BannerUpdateHandler {
 	return &BannerUpdateHandler{
 		logger: logger.With("service", "banner-update-handler"),
+		storageClient: storageClient,
 	}
 }
 
