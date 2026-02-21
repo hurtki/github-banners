@@ -25,8 +25,6 @@ services:
     image: postgres:15
     env_file: ./api/.env
     container_name: api-psgr
-    environment:
-      SERVICES_SECRET_KEY: "${SERVICES_SECRET_KEY}"
     networks:
       - api-net
     volumes:
@@ -37,6 +35,8 @@ services:
     env_file: ./renderer/.env
     image: renderer
     container_name: renderer
+    environment:
+      SERVICES_SECRET_KEY: "${SERVICES_SECRET_KEY}"
     networks:
       - banners-net
       - kafka-net
