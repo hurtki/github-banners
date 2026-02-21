@@ -20,10 +20,9 @@ type BannerUpdateHandler struct {
 	storageClient *storage.Client
 }
 
-func NewBannerUpdateHandler(logger logger.Logger, storageClient *storage.Client) *BannerUpdateHandler {
+func NewBannerUpdateHandler(logger logger.Logger) *BannerUpdateHandler {
 	return &BannerUpdateHandler{
 		logger: logger.With("service", "banner-update-handler"),
-		storageClient: storageClient,
 	}
 }
 
