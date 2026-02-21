@@ -35,7 +35,7 @@ func main() {
 	}
 
 	storageClient := storage.NewClient(cfg.StorageBaseURL, httpClient, logger)
-	bannerUpdateHandler := handlers.NewBannerUpdateHandler(logger, storageClient)
+	bannerUpdateHandler := handlers.NewBannerUpdateHandler(logger)
 
 	cgHandlerCfg := config.NewKafkaCGHandlerConfig()
 
