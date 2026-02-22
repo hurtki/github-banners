@@ -53,12 +53,13 @@ func NewKafkaConsumerGroup(ctx context.Context, logger logger.Logger, cfg config
 	}, nil
 }
 
-func (c *KafkaConsumerGroup) RegisterCGHandler(topics []string, handler sarama.ConsumerGroupHandler) error {
-	err := c.cg.Consume(c.ctx, topics, handler)
+func (c *KafkaConsumerGroup) RegisterCGHandler(topics []string, handler sarama.ConsumerGroupHandler) {
+	go func() {
+		err := c.cg.Consume(c.ctx, topics, handler)
+		c.logger.Error("error occured, when joining consumer group", "err", err)
+	}()
+}
 
-	if err != nil {
-		return fmt.Errorf("error occured when registering consumer group handler, %w", err)
-	}
-
-	return nil
+func (c *KafkaConsumerGroup) Close() error {
+	return c.cg.Close()
 }

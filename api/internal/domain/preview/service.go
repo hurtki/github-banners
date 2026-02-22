@@ -39,7 +39,7 @@ func (s *PreviewService) GetPreview(ctx context.Context, bannerInfo domain.Banne
 		return banner, nil
 	}
 
-	res, err, ok := s.g.Do(hash, func() (any, error) {
+	res, err, _ := s.g.Do(hash, func() (any, error) {
 		return s.renderer.RenderPreview(ctx, bannerInfo)
 	})
 

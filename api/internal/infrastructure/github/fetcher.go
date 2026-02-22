@@ -179,7 +179,7 @@ func (f *Fetcher) FetchUserData(ctx context.Context, username string) (*domain.G
 			updatedAt = repos[i].UpdatedAt.GetTime()
 		}
 
-		var owner *github.User = repos[i].GetOwner()
+		owner := repos[i].GetOwner()
 		if owner == nil || owner.GetLogin() == "" {
 			continue
 		}
