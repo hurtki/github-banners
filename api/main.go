@@ -11,6 +11,7 @@ import (
 	"github.com/hurtki/github-banners/api/internal/cache"
 	"github.com/hurtki/github-banners/api/internal/config"
 	"github.com/hurtki/github-banners/api/internal/domain"
+	longterm "github.com/hurtki/github-banners/api/internal/domain/long-term"
 	"github.com/hurtki/github-banners/api/internal/domain/preview"
 	userstats "github.com/hurtki/github-banners/api/internal/domain/user_stats"
 	"github.com/hurtki/github-banners/api/internal/handlers"
@@ -24,6 +25,7 @@ import (
 	"github.com/hurtki/github-banners/api/internal/infrastructure/storage"
 	log "github.com/hurtki/github-banners/api/internal/logger"
 	"github.com/hurtki/github-banners/api/internal/migrations"
+	banners_repo "github.com/hurtki/github-banners/api/internal/repo/banners"
 	github_data_repo "github.com/hurtki/github-banners/api/internal/repo/github_user_data"
 )
 
@@ -76,7 +78,7 @@ func main() {
 	// renderer infra intialization
 	rendererAuthRT := http_auth.NewAuthHTTPRoundTripper("api", http_auth.NewHMACSigner([]byte(cfg.ServicesSecret)), time.Now)
 	rendererHTTPClient := renderer_http.NewRendererHTTPClient(rendererAuthRT)
-	renderer := renderer.NewRenderer(rendererHTTPClient, logger, cfg.RendererBaseURL)
+	rendererCl := renderer.NewRenderer(rendererHTTPClient, logger, cfg.RendererBaseURL)
 
 	// storage infra initialization
 	storageAuthRT := http_auth.NewAuthHTTPRoundTripper(
@@ -89,25 +91,36 @@ func main() {
 		Transport: storageAuthRT,
 	}
 
-	_ = storage.NewClient(
+	storageCl := storage.NewClient(
 		cfg.StorageBaseURL,
 		storageHTTPClient,
 		logger,
 	)
 
-	previewUsecase := preview.NewPreviewUsecase(statsService, preview.NewPreviewService(renderer, cache.NewPreviewMemoryCache(cfg.CacheTTL)))
+	previewService := preview.NewPreviewService(rendererCl, cache.NewPreviewMemoryCache(cfg.CacheTTL))
+
+	previewUsecase := preview.NewPreviewUsecase(statsService, previewService)
 
 	bannersHandler := handlers.NewBannersHandler(logger, previewUsecase)
 
 	router.Get("/banners/preview/", bannersHandler.Preview)
 	router.Post("/banners/", bannersHandler.Create)
 
-	/*producer*/
-	_, err = kafka.NewBannerProducer([]string{"kafka:9092"}, "banner-update", config.NewProducerConfig(), logger)
+	kafkaProducer, err := kafka.NewBannerProducer([]string{"kafka:9092"}, "banner-update", config.NewProducerConfig(), logger)
 	if err != nil {
 		logger.Error("can't connect to kafka as a producer", "err", err)
 		os.Exit(1)
 	}
+
+	bannersRepo := banners_repo.NewPostgresRepo(db, logger)
+
+	_ = longterm.NewLTBannersUsecase(
+		bannersRepo,
+		kafkaProducer,
+		previewService,
+		storageCl,
+		statsService,
+	)
 
 	// Create and start HTTP server
 	srv := server.New(cfg, router, logger)
