@@ -2,9 +2,10 @@ package github
 
 import (
 	"context"
-	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/google/go-github/v81/github"
 )
 
 // acquireClient finds client with at least one request available.
@@ -57,10 +58,12 @@ func (f *Fetcher) acquireClient(ctx context.Context) *GithubClient {
 
 // UpdateClientWithResponse tries to get rate limit headers from response.
 // Updates client's fields using this reponse's headers.
-func (f *Fetcher) updateClientWithDoneResponse(cl *GithubClient, res *http.Response) {
-	if res == nil {
+func (f *Fetcher) updateClientWithDoneResponse(cl *GithubClient, githubRes *github.Response) {
+	if githubRes == nil || githubRes.Response == nil {
 		return
 	}
+	res := githubRes.Response
+
 	cl.mu.Lock()
 	defer cl.mu.Unlock()
 
