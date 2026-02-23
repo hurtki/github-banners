@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	banners_worker "github.com/hurtki/github-banners/api/internal/app/banners"
 	user_stats_worker "github.com/hurtki/github-banners/api/internal/app/user_stats"
 	"github.com/hurtki/github-banners/api/internal/cache"
 	"github.com/hurtki/github-banners/api/internal/config"
@@ -70,7 +71,7 @@ func main() {
 	statsService := userstats.NewUserStatsService(repo, githubFetcher, statsCache)
 
 	// TODO add configurating of worker to app config from env variables
-	statsWorker := user_stats_worker.NewStatsWorker(statsService.RefreshAll, time.Hour, logger, userstats.WorkerConfig{BatchSize: 5, Concurrency: 10, CacheTTL: time.Hour})
+	statsWorker := user_stats_worker.NewStatsWorker(statsService.RefreshAll, time.Hour, logger, userstats.WorkerConfig{BatchSize: 5, Concurrency: 10})
 	go statsWorker.Start(context.TODO())
 
 	router := chi.NewRouter()
@@ -114,13 +115,16 @@ func main() {
 
 	bannersRepo := banners_repo.NewPostgresRepo(db, logger)
 
-	_ = longterm.NewLTBannersUsecase(
+	ltBannersUsecase := longterm.NewLTBannersUsecase(
 		bannersRepo,
 		kafkaProducer,
 		previewService,
 		storageCl,
 		statsService,
 	)
+
+	ltBannersUpdateWorker := banners_worker.NewBannersWorker(logger, ltBannersUsecase.UpdateAll, time.Minute, longterm.UpdateAllConfig{Concurrency: 10})
+	go ltBannersUpdateWorker.Start(context.TODO())
 
 	// Create and start HTTP server
 	srv := server.New(cfg, router, logger)

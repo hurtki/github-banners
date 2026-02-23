@@ -1,4 +1,4 @@
-package userstats
+package userstats_worker
 
 import (
 	"context"
@@ -28,19 +28,19 @@ func NewStatsWorker(refreshAll RefreshAllFunc, interval time.Duration, logger lo
 
 func (w *StatsWorker) Start(ctx context.Context) {
 	if w == nil || w.refreshAll == nil {
-		w.logger.Warn("stats worker: refreshAll is nil; worker not started")
+		w.logger.Warn("refreshAll func or worker object is nil; worker ")
 		return
 	}
 
 	ticker := time.NewTicker(w.interval)
 	defer ticker.Stop()
 
-	w.logger.Info("stats worker: started", "interval", w.interval.String())
+	w.logger.Info("started", "interval", w.interval.String())
 
 	for {
 		select {
 		case <-ctx.Done():
-			w.logger.Info("stats worker: stopped, context canceled")
+			w.logger.Info("stopped, context canceled")
 			return
 		case <-ticker.C:
 			resultsCh, errorsCh := w.refreshAll(ctx, w.cfg)
@@ -50,7 +50,7 @@ func (w *StatsWorker) Start(ctx context.Context) {
 			for resultsCh != nil || errorsCh != nil {
 				select {
 				case <-ctx.Done():
-					w.logger.Info("exiting stats worker by context")
+					w.logger.Info("exiting by context")
 					return
 
 				case username, ok := <-resultsCh:
