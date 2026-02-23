@@ -123,7 +123,7 @@ func main() {
 		statsService,
 	)
 
-	ltBannersUpdateWorker := banners_worker.NewBannersWorker(logger, ltBannersUsecase.UpdateAll, time.Minute, longterm.UpdateAllConfig{Concurrency: 10})
+	ltBannersUpdateWorker := banners_worker.NewBannersWorker(logger, ltBannersUsecase.UpdateAll, time.Hour, longterm.UpdateAllConfig{Concurrency: 10})
 	go ltBannersUpdateWorker.Start(context.TODO())
 
 	// Create and start HTTP server

@@ -61,7 +61,8 @@ func (w *BannersWorker) Start(ctx context.Context) {
 						continue
 					}
 					if res.Err != nil {
-
+						errors++
+						w.logger.Error("can't update", "username", res.Meta.Username, "type", res.Meta.BannerType, "url-path", res.Meta.UrlPath)
 					} else {
 						success++
 						w.logger.Debug("updated", "username", res.Meta.Username, "type", res.Meta.BannerType, "url-path", res.Meta.UrlPath)

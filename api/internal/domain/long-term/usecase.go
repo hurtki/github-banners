@@ -88,5 +88,11 @@ func (u *LTBannersUsecase) CreateBanner(ctx context.Context, in CreateBannerIn) 
 	if err != nil {
 		return CreateBannerOut{}, ErrCantCreateBanner
 	}
+
+	err = u.bannerRepo.SaveBanner(ctx, bnrMeta)
+	if err != nil {
+		return CreateBannerOut{}, ErrCantCreateBanner
+	}
+
 	return CreateBannerOut{BannerUrlPath: bannerUrl}, nil
 }

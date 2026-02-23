@@ -75,6 +75,7 @@ func NewFetcher(tokens []string, config *domain.ServiceConfig, logger logger.Log
 // FetchUser fetches the user data from GitHub
 func (f *Fetcher) fetchUser(ctx context.Context, username string) (*github.User, error) {
 	cl := f.acquireClient(ctx)
+	f.logger.Debug("github cleint", "remaining", cl.Remaining)
 	if cl == nil {
 		f.logger.Warn("can't find available client for github api request")
 		return nil, domain.ErrUnavailable
