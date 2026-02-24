@@ -42,6 +42,7 @@ func (w *BannersWorker) Start(ctx context.Context) {
 			w.logger.Info("stopped, context canceled")
 			return
 		case <-ticker.C:
+			start := time.Now()
 			resultsCh, err := w.updateAllFunc(ctx, w.cfg)
 			if err != nil {
 				w.logger.Error("can't start banners update process", "err", err)
@@ -62,14 +63,15 @@ func (w *BannersWorker) Start(ctx context.Context) {
 					}
 					if res.Err != nil {
 						errors++
-						w.logger.Error("can't update", "username", res.Meta.Username, "type", res.Meta.BannerType, "url-path", res.Meta.UrlPath)
+						w.logger.Error("can't update", "username", res.Meta.Username, "type", res.Meta.BannerType, "url-path", res.Meta.UrlPath, "err", res.Err)
 					} else {
 						success++
 						w.logger.Debug("updated", "username", res.Meta.Username, "type", res.Meta.BannerType, "url-path", res.Meta.UrlPath)
 					}
 				}
 			}
-			w.logger.Info("finshed scheduled update", "success", success, "errors", errors)
+			w.logger.Info("finshed scheduled update", "success", success, "errors", errors, "duration", time.Since(start).String())
+			ticker.Reset(w.interval)
 		}
 	}
 }

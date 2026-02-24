@@ -2,6 +2,7 @@ package github
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/url"
 	"sync"
@@ -51,13 +52,19 @@ func NewFetcher(tokens []string, config *domain.ServiceConfig, logger logger.Log
 			initLogger.Error("unexpected error, when getting client's rate limit, skipping it", "err", err)
 			continue
 		}
-
-		clients = append(clients, &GithubClient{
+		cl := &GithubClient{
 			Client:    client,
 			Remaining: clLimit.Core.Remaining,
 			ResetsAt:  clLimit.Core.Reset.Time,
 			mu:        sync.Mutex{},
-		})
+		}
+		initLogger.Info("new client created",
+			"remaining", cl.Remaining,
+			"resets_in", time.Until(cl.ResetsAt).String(),
+			"token", fmt.Sprintf("%s...", token[:len(token)/4]),
+		)
+
+		clients = append(clients, cl)
 	}
 	if len(clients) == 0 {
 		initLogger.Warn("initialized Fetcher without clients")
@@ -75,7 +82,6 @@ func NewFetcher(tokens []string, config *domain.ServiceConfig, logger logger.Log
 // FetchUser fetches the user data from GitHub
 func (f *Fetcher) fetchUser(ctx context.Context, username string) (*github.User, error) {
 	cl := f.acquireClient(ctx)
-	f.logger.Debug("github cleint", "remaining", cl.Remaining)
 	if cl == nil {
 		f.logger.Warn("can't find available client for github api request")
 		return nil, domain.ErrUnavailable

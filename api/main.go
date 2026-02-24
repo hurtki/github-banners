@@ -45,7 +45,7 @@ func main() {
 
 	}
 
-	// Create in-memory cache
+	// cache
 	statsCache := cache.NewStatsMemoryCache(cfg.CacheTTL)
 
 	// Create service configuration
@@ -69,10 +69,6 @@ func main() {
 
 	// Create stats service (domain service with cache)
 	statsService := userstats.NewUserStatsService(repo, githubFetcher, statsCache)
-
-	// TODO add configurating of worker to app config from env variables
-	statsWorker := user_stats_worker.NewStatsWorker(statsService.RefreshAll, time.Hour, logger, userstats.WorkerConfig{BatchSize: 5, Concurrency: 10})
-	go statsWorker.Start(context.TODO())
 
 	router := chi.NewRouter()
 
@@ -104,9 +100,6 @@ func main() {
 
 	bannersHandler := handlers.NewBannersHandler(logger, previewUsecase)
 
-	router.Get("/banners/preview/", bannersHandler.Preview)
-	router.Post("/banners/", bannersHandler.Create)
-
 	kafkaProducer, err := kafka.NewBannerProducer([]string{"kafka:9092"}, "banner-update", config.NewProducerConfig(), logger)
 	if err != nil {
 		logger.Error("can't connect to kafka as a producer", "err", err)
@@ -123,8 +116,15 @@ func main() {
 		statsService,
 	)
 
-	ltBannersUpdateWorker := banners_worker.NewBannersWorker(logger, ltBannersUsecase.UpdateAll, time.Hour, longterm.UpdateAllConfig{Concurrency: 10})
+	// http handlers
+	router.Get("/banners/preview/", bannersHandler.Preview)
+	router.Post("/banners/", bannersHandler.Create)
+
+	// workers startup
+	ltBannersUpdateWorker := banners_worker.NewBannersWorker(logger, ltBannersUsecase.UpdateAll, time.Hour, longterm.UpdateAllConfig{Concurrency: 20})
 	go ltBannersUpdateWorker.Start(context.TODO())
+	statsWorker := user_stats_worker.NewStatsWorker(statsService.RefreshAll, time.Hour, logger, userstats.WorkerConfig{BatchSize: 5, Concurrency: 10})
+	go statsWorker.Start(context.TODO())
 
 	// Create and start HTTP server
 	srv := server.New(cfg, router, logger)
