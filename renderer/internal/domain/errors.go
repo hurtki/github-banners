@@ -3,8 +3,14 @@ package domain
 import "errors"
 
 var (
-	ErrNotFound    = errors.New("not found")
-	ErrUnavailable = errors.New("service unavailable")
+	ErrNotFound          = errors.New("not found")
+	ErrUnavailable       = errors.New("service unavailable")
+
+	//Banner specific errors
+	ErrInvalidUsername   = errors.New("invalid username: cannot be empty")
+	ErrInvalidBannerType = errors.New("invalid banner type: template not supported")
+	ErrRenderFailure     = errors.New("render failure: unable to generate banner")
+	ErrStorageFailure    = errors.New("storage failure: unable to save banner")
 )
 
 type ConflictError struct {
