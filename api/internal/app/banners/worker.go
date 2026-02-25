@@ -2,6 +2,7 @@ package banners_worker
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	longterm "github.com/hurtki/github-banners/api/internal/domain/long-term"
@@ -11,23 +12,53 @@ import (
 type UpdateAllFunc func(context.Context, longterm.UpdateAllConfig) (<-chan longterm.Result, error)
 
 type BannersWorker struct {
-	logger        logger.Logger
-	updateAllFunc UpdateAllFunc
-	interval      time.Duration
-	cfg           longterm.UpdateAllConfig
+	logger    logger.Logger
+	updateAll UpdateAllFunc
+	interval  time.Duration
+	cfg       longterm.UpdateAllConfig
+
+	ctx    context.Context
+	cancel func()
+	wg     sync.WaitGroup
 }
 
 func NewBannersWorker(logger logger.Logger, updateAllFunc UpdateAllFunc, interval time.Duration, cfg longterm.UpdateAllConfig) *BannersWorker {
+	ctx, cancel := context.WithCancel(context.Background())
+
 	return &BannersWorker{
-		logger:        logger.With("service", "banner-updater-worker"),
-		interval:      interval,
-		updateAllFunc: updateAllFunc,
-		cfg:           cfg,
+		logger:    logger.With("service", "banner-updater-worker"),
+		interval:  interval,
+		updateAll: updateAllFunc,
+		cfg:       cfg,
+		ctx:       ctx,
+		cancel:    cancel,
+		wg:        sync.WaitGroup{},
 	}
 }
 
-func (w *BannersWorker) Start(ctx context.Context) {
-	if w == nil || w.updateAllFunc == nil {
+func (w *BannersWorker) Close(ctx context.Context) error {
+	w.cancel()
+	done := make(chan struct{})
+	go func() {
+		w.wg.Wait()
+		done <- struct{}{}
+	}()
+	select {
+	case <-ctx.Done():
+		w.logger.Warn("couldn't shutdown in time, exiting", "ctxErr", ctx.Err())
+		return ctx.Err()
+	case <-done:
+		w.logger.Info("successfully shutted down")
+		return nil
+	}
+}
+
+func (w *BannersWorker) Start() {
+	w.wg.Go(w.run)
+}
+
+func (w *BannersWorker) run() {
+	if w == nil || w.updateAll == nil {
 		w.logger.Warn("updateAllFunc or worker object is nil, worker didn't start")
 	}
 
@@ -38,23 +69,27 @@ func (w *BannersWorker) Start(ctx context.Context) {
 
 	for {
 		select {
-		case <-ctx.Done():
-			w.logger.Info("stopped, context canceled")
+		case <-w.ctx.Done():
 			return
 		case <-ticker.C:
 			start := time.Now()
-			resultsCh, err := w.updateAllFunc(ctx, w.cfg)
+			ctx, cancel := context.WithTimeout(w.ctx, time.Second*5)
+			defer cancel()
+			resultsCh, err := w.updateAll(ctx, w.cfg)
 			if err != nil {
+				if err == context.Canceled {
+					return
+				}
 				w.logger.Error("can't start banners update process", "err", err)
 				continue
 			}
+
 			success := 0
 			errors := 0
 
 			for resultsCh != nil {
 				select {
-				case <-ctx.Done():
-					w.logger.Info("exiting by context")
+				case <-w.ctx.Done():
 					return
 				case res, ok := <-resultsCh:
 					if !ok {
@@ -70,8 +105,10 @@ func (w *BannersWorker) Start(ctx context.Context) {
 					}
 				}
 			}
+
 			w.logger.Info("finshed scheduled update", "success", success, "errors", errors, "duration", time.Since(start).String())
 			ticker.Reset(w.interval)
 		}
 	}
+
 }

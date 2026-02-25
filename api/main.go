@@ -4,6 +4,8 @@ import (
 	"context"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -24,7 +26,7 @@ import (
 	renderer_http "github.com/hurtki/github-banners/api/internal/infrastructure/renderer/http"
 	"github.com/hurtki/github-banners/api/internal/infrastructure/server"
 	"github.com/hurtki/github-banners/api/internal/infrastructure/storage"
-	log "github.com/hurtki/github-banners/api/internal/logger"
+	"github.com/hurtki/github-banners/api/internal/logger"
 	"github.com/hurtki/github-banners/api/internal/migrations"
 	banners_repo "github.com/hurtki/github-banners/api/internal/repo/banners"
 	github_data_repo "github.com/hurtki/github-banners/api/internal/repo/github_user_data"
@@ -35,7 +37,7 @@ func main() {
 	cfg := config.Load()
 
 	// Setup logger
-	logger := log.NewLogger(cfg.LogLevel, cfg.LogFormat)
+	logger := logger.NewLogger(cfg.LogLevel, cfg.LogFormat)
 	logger.Info("Starting github banners API service")
 
 	psgrConf, err := config.LoadPostgres()
@@ -122,14 +124,24 @@ func main() {
 
 	// workers startup
 	ltBannersUpdateWorker := banners_worker.NewBannersWorker(logger, ltBannersUsecase.UpdateAll, time.Hour, longterm.UpdateAllConfig{Concurrency: 20})
-	go ltBannersUpdateWorker.Start(context.TODO())
 	statsWorker := user_stats_worker.NewStatsWorker(statsService.RefreshAll, time.Hour, logger, userstats.WorkerConfig{BatchSize: 5, Concurrency: 10})
-	go statsWorker.Start(context.TODO())
+
+	ltBannersUpdateWorker.Start()
+	statsWorker.Start()
 
 	// Create and start HTTP server
 	srv := server.New(cfg, router, logger)
-	if err := srv.Start(); err != nil {
-		logger.Error("Server error", "err", err)
-		os.Exit(1)
-	}
+	srv.Start()
+
+	// gracefull shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	<-quit
+
+	quitCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	ltBannersUpdateWorker.Close(quitCtx)
+	statsWorker.Close(quitCtx)
+	srv.Close(quitCtx)
+
+	cancel()
 }

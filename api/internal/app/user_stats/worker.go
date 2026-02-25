@@ -2,31 +2,62 @@ package userstats_worker
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	userstats "github.com/hurtki/github-banners/api/internal/domain/user_stats"
 	"github.com/hurtki/github-banners/api/internal/logger"
 )
 
+type RefreshAllFunc func(ctx context.Context, cfg userstats.WorkerConfig) (<-chan string, <-chan error)
+
 type StatsWorker struct {
 	refreshAll RefreshAllFunc
 	interval   time.Duration
 	logger     logger.Logger
 	cfg        userstats.WorkerConfig
+
+	ctx    context.Context
+	cancel func()
+	wg     sync.WaitGroup
 }
 
-type RefreshAllFunc func(ctx context.Context, cfg userstats.WorkerConfig) (<-chan string, <-chan error)
-
 func NewStatsWorker(refreshAll RefreshAllFunc, interval time.Duration, logger logger.Logger, cfg userstats.WorkerConfig) *StatsWorker {
+	ctx, cancel := context.WithCancel(context.Background())
+
 	return &StatsWorker{
 		refreshAll: refreshAll,
 		interval:   interval,
 		logger:     logger.With("service", "stats-updater-worker"),
 		cfg:        cfg,
+		ctx:        ctx,
+		cancel:     cancel,
+		wg:         sync.WaitGroup{},
 	}
 }
 
-func (w *StatsWorker) Start(ctx context.Context) {
+func (w *StatsWorker) Close(ctx context.Context) error {
+	w.cancel()
+	done := make(chan struct{})
+	go func() {
+		w.wg.Wait()
+		done <- struct{}{}
+	}()
+	select {
+	case <-ctx.Done():
+		w.logger.Warn("couldn't shutdown in time, exiting", "ctxErr", ctx.Err())
+		return ctx.Err()
+	case <-done:
+		w.logger.Info("successfully shutted down")
+		return nil
+	}
+}
+
+func (w *StatsWorker) Start() {
+	w.wg.Go(w.run)
+}
+
+func (w *StatsWorker) run() {
 	if w == nil || w.refreshAll == nil {
 		w.logger.Warn("refreshAll func or worker object is nil; worker ")
 		return
@@ -39,18 +70,19 @@ func (w *StatsWorker) Start(ctx context.Context) {
 
 	for {
 		select {
-		case <-ctx.Done():
-			w.logger.Info("stopped, context canceled")
+		case <-w.ctx.Done():
 			return
 		case <-ticker.C:
+			ctx, cancel := context.WithTimeout(w.ctx, time.Second*5)
+			defer cancel()
+
 			resultsCh, errorsCh := w.refreshAll(ctx, w.cfg)
 			success := 0
 			errors := 0
 
 			for resultsCh != nil || errorsCh != nil {
 				select {
-				case <-ctx.Done():
-					w.logger.Info("exiting by context")
+				case <-w.ctx.Done():
 					return
 
 				case username, ok := <-resultsCh:
