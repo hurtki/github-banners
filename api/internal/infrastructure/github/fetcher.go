@@ -81,6 +81,10 @@ func NewFetcher(tokens []string, config *domain.ServiceConfig, logger logger.Log
 
 // FetchUser fetches the user data from GitHub
 func (f *Fetcher) fetchUser(ctx context.Context, username string) (*github.User, error) {
+	if username != url.PathEscape(username) {
+		return nil, domain.ErrNotFound
+	}
+
 	cl := f.acquireClient(ctx)
 	if cl == nil {
 		f.logger.Warn("can't find available client for github api request")
@@ -89,12 +93,6 @@ func (f *Fetcher) fetchUser(ctx context.Context, username string) (*github.User,
 
 	ctx, cancel := context.WithTimeout(ctx, f.config.RequestTimeout)
 	defer cancel()
-
-	/*
-		if username != url.PathEscape(username) {
-			return nil, domain.ErrNotFound
-		}
-	*/
 
 	user, res, err := cl.Client.Users.Get(ctx, username)
 	f.updateClientWithDoneResponse(cl, res)

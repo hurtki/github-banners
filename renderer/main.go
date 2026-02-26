@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/hurtki/github-banners/renderer/internal/config"
 	"github.com/hurtki/github-banners/renderer/internal/handlers"
@@ -14,8 +15,6 @@ import (
 )
 
 func main() {
-	ctx, cancel := context.WithCancel(context.Background())
-
 	cfg := config.Load()
 
 	logger := logger.NewLogger(cfg.LogLevel, cfg.LogFormat)
@@ -27,7 +26,7 @@ func main() {
 	cgBannerUpdateHandler := kafka_cg_handlers.NewBannerUpdateCGHandler(logger, bannerUpdateHandler, cgHandlerCfg)
 	kafkaConsumerCfg := config.NewKafkaConsumerConfig()
 
-	cg, err := kafka.NewKafkaConsumerGroup(ctx, logger, kafkaConsumerCfg)
+	cg, err := kafka.NewKafkaConsumerGroup(logger, kafkaConsumerCfg)
 	if err != nil {
 		logger.Error("can't initialize kafka consumer group", "err", err)
 		os.Exit(1)
@@ -38,8 +37,10 @@ func main() {
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	<-quit
 	logger.Info("shutting down, interrupt signal received")
+
+	quitCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
 	// close consumer group
-	cg.Close()
-	// cancel base context
-	cancel()
+	cg.Close(quitCtx)
 }

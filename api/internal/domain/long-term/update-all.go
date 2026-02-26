@@ -63,6 +63,8 @@ func (u *LTBannersUsecase) UpdateAll(ctx context.Context, cfg UpdateAllConfig) (
 	return resultsCh, nil
 }
 
+// updateOne gathers stats and sends banner update request to updateRequestPublisher
+// returns readable errors, should be used only in LTBannersUsecase.UpdateAll method
 func (u *LTBannersUsecase) updateOne(ctx context.Context, bannerMeta domain.LTBannerMetadata) error {
 	stats, err := u.statsService.GetStats(ctx, bannerMeta.Username)
 	if err != nil {

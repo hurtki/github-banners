@@ -70,18 +70,14 @@ func (f *Fetcher) updateClientWithDoneResponse(cl *GithubClient, githubRes *gith
 	resetUnix, err := strconv.ParseInt(
 		res.Header.Get("X-RateLimit-Reset"), 10, 64,
 	)
-	if err != nil {
-		f.logger.Warn("can't parse X-RateLimit-Reset github api response header into int64", "err", err)
-	} else {
+	if err == nil {
 		cl.ResetsAt = time.Unix(resetUnix, 0)
 	}
 
 	remaining, err := strconv.ParseInt(
 		res.Header.Get("X-RateLimit-Remaining"), 10, 64,
 	)
-	if err != nil {
-		f.logger.Warn("can't parse X-RateLimit-Remaining github api response header into int64", "err", err)
-	} else {
+	if err == nil {
 		cl.Remaining = int(remaining)
 	}
 

@@ -10,8 +10,6 @@ type BannerRepo interface {
 	GetActiveBanners(ctx context.Context) ([]domain.LTBannerMetadata, error)
 	SaveBanner(ctx context.Context, banner domain.LTBannerMetadata) error
 	DeactivateBanner(ctx context.Context, githubUsername string, bannerType domain.BannerType) error
-	//IsActive(ctx context.Context, githubUsername string, bannerType domain.BannerType) (bool, error)
-
 	GetBanner(ctx context.Context, githubUsername string, bannerType domain.BannerType) (domain.LTBannerMetadata, error)
 }
 

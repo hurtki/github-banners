@@ -49,12 +49,11 @@ func (u *LTBannersUsecase) CreateBanner(ctx context.Context, in CreateBannerIn) 
 		case errors.Is(err, repo.ErrNothingFound):
 			bnrMeta.Username = in.Username
 			bnrMeta.BannerType = bt
-			bnrMeta.UrlPath = GenerateUrlPath(bnrMeta.Username, bnrMeta.BannerType)
+			bnrMeta.UrlPath = generateUrlPath(bnrMeta.Username, bnrMeta.BannerType)
 			bnrMeta.Active = true
 		case errors.As(err, errRepoInternal):
 			// if db internal error occured, we won't go to next services
 			// because, then we could get same thing when saving a new banner and all the work will be useless
-			// or banner could already exists, so we surely don't need to do anything
 			return CreateBannerOut{}, ErrCantCreateBanner
 		default:
 			return CreateBannerOut{}, ErrCantCreateBanner
@@ -77,18 +76,21 @@ func (u *LTBannersUsecase) CreateBanner(ctx context.Context, in CreateBannerIn) 
 		}
 	}
 
+	// render banner
 	bnrInfo := domain.BannerInfo{Username: in.Username, BannerType: bt, Stats: stats}
 	bnr, err := u.previewService.GetPreview(ctx, bnrInfo)
 	if err != nil {
 		return CreateBannerOut{}, ErrCantCreateBanner
 	}
 
+	// save rendered banner to storage, so it will be available instantly on returned link
 	bannerUrl, err := u.storageClient.SaveBanner(ctx, bnrMeta.UrlPath, string(bnr.Banner))
 
 	if err != nil {
 		return CreateBannerOut{}, ErrCantCreateBanner
 	}
 
+	// only after all steps, saving to our repo
 	err = u.bannerRepo.SaveBanner(ctx, bnrMeta)
 	if err != nil {
 		return CreateBannerOut{}, ErrCantCreateBanner
