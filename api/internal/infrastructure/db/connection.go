@@ -69,8 +69,8 @@ func NewDB(conf *config.PostgresConfig, logger logger.Logger) (*sql.DB, error) {
 
 	logger.Info("got postgres max connections count", "count", maxPostgresConnections, "source", fn)
 
-	var dbMaxOpenCons int = maxPostgresConnections * dbMaxConnectionsPercentToPostgresMax / 100
-	var dbMaxIdleCons int = maxPostgresConnections * dbMaxIdleConnectionsPercentToPostgresMax / 100
+	dbMaxOpenCons := maxPostgresConnections * dbMaxConnectionsPercentToPostgresMax / 100
+	dbMaxIdleCons := maxPostgresConnections * dbMaxIdleConnectionsPercentToPostgresMax / 100
 
 	logger.Info("setting db max open connections", "count", dbMaxOpenCons, "source", fn)
 	logger.Info("setting db max idle connections", "count", dbMaxIdleCons, "source", fn)

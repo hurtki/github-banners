@@ -4,13 +4,17 @@ import (
 	"context"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	banners_worker "github.com/hurtki/github-banners/api/internal/app/banners"
 	user_stats_worker "github.com/hurtki/github-banners/api/internal/app/user_stats"
 	"github.com/hurtki/github-banners/api/internal/cache"
 	"github.com/hurtki/github-banners/api/internal/config"
 	"github.com/hurtki/github-banners/api/internal/domain"
+	longterm "github.com/hurtki/github-banners/api/internal/domain/long-term"
 	"github.com/hurtki/github-banners/api/internal/domain/preview"
 	userstats "github.com/hurtki/github-banners/api/internal/domain/user_stats"
 	"github.com/hurtki/github-banners/api/internal/handlers"
@@ -22,9 +26,10 @@ import (
 	renderer_http "github.com/hurtki/github-banners/api/internal/infrastructure/renderer/http"
 	"github.com/hurtki/github-banners/api/internal/infrastructure/server"
 	"github.com/hurtki/github-banners/api/internal/infrastructure/storage"
-	log "github.com/hurtki/github-banners/api/internal/logger"
+	"github.com/hurtki/github-banners/api/internal/logger"
 	"github.com/hurtki/github-banners/api/internal/migrations"
-	"github.com/hurtki/github-banners/api/internal/repo/github_user_data"
+	banners_repo "github.com/hurtki/github-banners/api/internal/repo/banners"
+	github_data_repo "github.com/hurtki/github-banners/api/internal/repo/github_user_data"
 )
 
 func main() {
@@ -32,7 +37,7 @@ func main() {
 	cfg := config.Load()
 
 	// Setup logger
-	logger := log.NewLogger(cfg.LogLevel, cfg.LogFormat)
+	logger := logger.NewLogger(cfg.LogLevel, cfg.LogFormat)
 	logger.Info("Starting github banners API service")
 
 	psgrConf, err := config.LoadPostgres()
@@ -42,7 +47,7 @@ func main() {
 
 	}
 
-	// Create in-memory cache
+	// cache
 	statsCache := cache.NewStatsMemoryCache(cfg.CacheTTL)
 
 	// Create service configuration
@@ -62,21 +67,17 @@ func main() {
 		logger.Error("failed to run migrations", "err", err.Error())
 		os.Exit(1)
 	}
-	repo := github_user_data.NewGithubDataPsgrRepo(db, logger)
+	repo := github_data_repo.NewGithubDataPsgrRepo(db, logger)
 
 	// Create stats service (domain service with cache)
 	statsService := userstats.NewUserStatsService(repo, githubFetcher, statsCache)
-
-	// TODO add configurating of worker to app config from env variables
-	statsWorker := user_stats_worker.NewStatsWorker(statsService.RefreshAll, time.Hour, logger, userstats.WorkerConfig{BatchSize: 5, Concurrency: 10, CacheTTL: time.Hour})
-	go statsWorker.Start(context.TODO())
 
 	router := chi.NewRouter()
 
 	// renderer infra intialization
 	rendererAuthRT := http_auth.NewAuthHTTPRoundTripper("api", http_auth.NewHMACSigner([]byte(cfg.ServicesSecret)), time.Now)
 	rendererHTTPClient := renderer_http.NewRendererHTTPClient(rendererAuthRT)
-	renderer := renderer.NewRenderer(rendererHTTPClient, logger, cfg.RendererBaseURL)
+	rendererCl := renderer.NewRenderer(rendererHTTPClient, logger, cfg.RendererBaseURL)
 
 	// storage infra initialization
 	storageAuthRT := http_auth.NewAuthHTTPRoundTripper(
@@ -89,30 +90,58 @@ func main() {
 		Transport: storageAuthRT,
 	}
 
-	storageClient := storage.NewClient(
+	storageCl := storage.NewClient(
 		cfg.StorageBaseURL,
 		storageHTTPClient,
 		logger,
 	)
 
-	previewUsecase := preview.NewPreviewUsecase(statsService, preview.NewPreviewService(renderer, cache.NewPreviewMemoryCache(cfg.CacheTTL)))
+	previewService := preview.NewPreviewService(rendererCl, cache.NewPreviewMemoryCache(cfg.CacheTTL))
+
+	previewUsecase := preview.NewPreviewUsecase(statsService, previewService)
 
 	bannersHandler := handlers.NewBannersHandler(logger, previewUsecase)
 
-	router.Get("/banners/preview/", bannersHandler.Preview)
-	router.Post("/banners/", bannersHandler.Create)
-
-	/*producer*/
-	_, err = kafka.NewBannerProducer([]string{"kafka:9092"}, "banner-update", config.NewProducerConfig(), logger)
+	kafkaProducer, err := kafka.NewBannerProducer([]string{"kafka:9092"}, "banner-update", config.NewProducerConfig(), logger)
 	if err != nil {
 		logger.Error("can't connect to kafka as a producer", "err", err)
 		os.Exit(1)
 	}
 
+	bannersRepo := banners_repo.NewPostgresRepo(db, logger)
+
+	ltBannersUsecase := longterm.NewLTBannersUsecase(
+		bannersRepo,
+		kafkaProducer,
+		previewService,
+		storageCl,
+		statsService,
+	)
+
+	// http handlers
+	router.Get("/banners/preview/", bannersHandler.Preview)
+	router.Post("/banners/", bannersHandler.Create)
+
+	// workers startup
+	ltBannersUpdateWorker := banners_worker.NewBannersWorker(logger, ltBannersUsecase.UpdateAll, time.Hour, longterm.UpdateAllConfig{Concurrency: 20})
+	statsWorker := user_stats_worker.NewStatsWorker(statsService.RefreshAll, time.Hour, logger, userstats.WorkerConfig{BatchSize: 5, Concurrency: 10})
+
+	ltBannersUpdateWorker.Start()
+	statsWorker.Start()
+
 	// Create and start HTTP server
 	srv := server.New(cfg, router, logger)
-	if err := srv.Start(); err != nil {
-		logger.Error("Server error", "err", err)
-		os.Exit(1)
-	}
+	srv.Start()
+
+	// gracefull shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	<-quit
+
+	quitCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	ltBannersUpdateWorker.Close(quitCtx)
+	statsWorker.Close(quitCtx)
+	srv.Close(quitCtx)
+
+	cancel()
 }
