@@ -59,6 +59,20 @@ func (r *GithubDataPsgrRepo) SaveUserData(ctx context.Context, userData domain.G
 		return toRepoError(err)
 	}
 
+	// deduplicate
+	seen := make(map[int64]struct{}, len(userData.Repositories))
+	repos := make([]domain.GithubRepository, 0, len(userData.Repositories))
+
+	for _, r := range userData.Repositories {
+		if _, ok := seen[r.ID]; ok {
+			continue
+		}
+		seen[r.ID] = struct{}{}
+		repos = append(repos, r)
+	}
+
+	userData.Repositories = repos
+
 	// Batch/Chunk Repository Upsert (Postgres Limit: 65535 parameters)
 	batchSize := 500
 	for i := 0; i < len(userData.Repositories); i += batchSize {

@@ -3,6 +3,7 @@ package kafka
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/IBM/sarama"
@@ -16,12 +17,15 @@ const (
 )
 
 type KafkaConsumerGroup struct {
-	ctx    context.Context
 	cg     sarama.ConsumerGroup
 	logger logger.Logger
+
+	ctx    context.Context
+	cancel func()
+	wg     sync.WaitGroup
 }
 
-func NewKafkaConsumerGroup(ctx context.Context, logger logger.Logger, cfg config.KafkaConsumerConfig) (*KafkaConsumerGroup, error) {
+func NewKafkaConsumerGroup(logger logger.Logger, cfg config.KafkaConsumerConfig) (*KafkaConsumerGroup, error) {
 	fn := "internal.infrastructure.kafka.NewKafkaConsumerGroup"
 
 	var cg sarama.ConsumerGroup
@@ -46,19 +50,45 @@ func NewKafkaConsumerGroup(ctx context.Context, logger logger.Logger, cfg config
 
 	logger.Info("initialized consumer group successfully", "addrs", cfg.Addrs, "source", fn)
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	return &KafkaConsumerGroup{
-		ctx:    ctx,
 		cg:     cg,
 		logger: logger,
+		ctx:    ctx,
+		cancel: cancel,
+		wg:     sync.WaitGroup{},
 	}, nil
 }
 
-func (c *KafkaConsumerGroup) RegisterCGHandler(topics []string, handler sarama.ConsumerGroupHandler) error {
+func (c *KafkaConsumerGroup) RegisterCGHandler(topics []string, handler sarama.ConsumerGroupHandler) {
+	c.wg.Go(func() {
+		c.registerCGHandler(topics, handler)
+	})
+}
+
+func (c *KafkaConsumerGroup) registerCGHandler(topics []string, handler sarama.ConsumerGroupHandler) {
 	err := c.cg.Consume(c.ctx, topics, handler)
-
 	if err != nil {
-		return fmt.Errorf("error occured when registering consumer group handler, %w", err)
+		c.logger.Error("error occured, when registering consumer group handler", "err", err, "topics", topics)
 	}
+}
 
-	return nil
+func (c *KafkaConsumerGroup) Close(ctx context.Context) error {
+	c.cancel()
+	done := make(chan error)
+	go func() {
+		c.wg.Wait()
+		done <- c.cg.Close()
+	}()
+	select {
+	case <-ctx.Done():
+		c.logger.Warn("couldn't shutdown in time, exiting", "ctxErr", ctx.Err())
+		return ctx.Err()
+	case err := <-done:
+		if err == nil {
+			c.logger.Info("successfully shutted down")
+		}
+		return err
+	}
 }

@@ -20,5 +20,4 @@ type CachedStats struct {
 type WorkerConfig struct {
 	BatchSize   int
 	Concurrency int
-	CacheTTL    time.Duration
 }
