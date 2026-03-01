@@ -1,13 +1,36 @@
 package templates
 
 import (
+	"bytes"
 	"embed"
+	"fmt"
 	"html/template"
+
+	"github.com/hurtki/github-banners/renderer/internal/domain/render"
+	"github.com/hurtki/github-banners/renderer/internal/layout"
 )
 
-//go:embed *.svg
-var bannerFiles embed.FS
+//go:embed assets/*.svg
+var bannerAssets embed.FS
 
-func Load() (*template.Template, error) {
-	return template.ParseFS(bannerFiles, "*.svg")
+type Renderer struct {
+	tmpl *template.Template
+}
+
+func NewRender() (*Renderer, error) {
+	t, err := template.ParseFS(bannerAssets, "assets/*.svg")
+	if err != nil {
+		return nil, err
+	}
+	return &Renderer{tmpl: t}, nil
+}
+
+func (r *Renderer) RenderBanner(view *layout.BannerView) ([]byte, error) {
+	var buf bytes.Buffer
+	templateName := fmt.Sprintf("%s.svg", view.BannerType)
+
+	if err := r.tmpl.ExecuteTemplate(&buf, templateName, view); err != nil {
+		return nil, render.ErrRenderFailure
+	}
+	return buf.Bytes(), nil
 }
