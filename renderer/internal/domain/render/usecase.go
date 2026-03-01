@@ -4,18 +4,23 @@ import (
 	"context"
 
 	"github.com/hurtki/github-banners/renderer/internal/domain"
+	"github.com/hurtki/github-banners/renderer/internal/layout"
 )
 
 type BannerStorage interface {
 	SaveBanner(ctx context.Context, bannerID string, svg string) (string, error)
 }
 
+type BannerRenderer interface {
+	RenderBanner(view *layout.BannerView) ([]byte, error)
+}
+
 type Usecase struct {
-	renderer *Service
+	renderer BannerRenderer
 	storage  BannerStorage
 }
 
-func NewUsecase(r *Service, s BannerStorage) *Usecase {
+func NewUsecase(r BannerRenderer, s BannerStorage) *Usecase {
 	return &Usecase{
 		renderer: r,
 		storage:  s,
@@ -26,7 +31,10 @@ func (u *Usecase) Execute(ctx context.Context, req domain.BannerInfo) error {
 	if err := u.validate(req); err != nil {
 		return err
 	}
-	renderedData, err := u.renderer.Render(req)
+
+	view := layout.BuildView(req)
+
+	renderedData, err := u.renderer.RenderBanner(view)
 	if err != nil {
 		return err
 	}
@@ -35,6 +43,7 @@ func (u *Usecase) Execute(ctx context.Context, req domain.BannerInfo) error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
