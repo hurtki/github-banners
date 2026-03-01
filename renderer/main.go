@@ -27,11 +27,11 @@ func main() {
 
 	authTripper := httpauth.NewAuthHTTPRoundTripper("renderer-ms", signer, time.Now)
 	httpClient := &http.Client{
-		Transport : authTripper,
-		Timeout : time.Second * 15,
+		Transport: authTripper,
+		Timeout:   time.Second * 15,
 	}
 
-	storageClient := storage.NewClient(cfg.StorageBaseURL, httpClient, logger)
+	_ = storage.NewClient(cfg.StorageBaseURL, httpClient, logger)
 	bannerUpdateHandler := handlers.NewBannerUpdateHandler(logger)
 
 	cgHandlerCfg := config.NewKafkaCGHandlerConfig()

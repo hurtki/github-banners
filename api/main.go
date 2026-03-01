@@ -100,8 +100,6 @@ func main() {
 
 	previewUsecase := preview.NewPreviewUsecase(statsService, previewService)
 
-	bannersHandler := handlers.NewBannersHandler(logger, previewUsecase)
-
 	kafkaProducer, err := kafka.NewBannerProducer([]string{"kafka:9092"}, "banner-update", config.NewProducerConfig(), logger)
 	if err != nil {
 		logger.Error("can't connect to kafka as a producer", "err", err)
@@ -117,6 +115,8 @@ func main() {
 		storageCl,
 		statsService,
 	)
+
+	bannersHandler := handlers.NewBannersHandler(logger, previewUsecase, ltBannersUsecase)
 
 	// http handlers
 	router.Get("/banners/preview/", bannersHandler.Preview)
