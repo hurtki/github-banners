@@ -1,62 +1,227 @@
 <svg width="460" height="215" xmlns="http://www.w3.org/2000/svg">
   <defs>
+    <pattern id="scanlines" x="0" y="0" width="460" height="3" patternUnits="userSpaceOnUse">
+      <rect width="460" height="1" fill="rgba(0,255,180,0.04)"/>
+      <rect y="1" width="460" height="2" fill="transparent"/>
+    </pattern>
+
+    <pattern id="scan-sweep" x="0" y="0" width="460" height="215" patternUnits="userSpaceOnUse">
+      <rect width="460" height="4" fill="rgba(0,255,180,0.07)" y="0">
+        <animateTransform attributeName="patternTransform" type="translate" from="0,0" to="0,215"
+          dur="3s" repeatCount="indefinite"/>
+      </rect>
+    </pattern>
+
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>
+      <feColorMatrix in="blur" type="matrix"
+        values="0 0 0 0 0  0 1 0 0 0.9  0 0 0 0 0.7  0 0 0 1 0" result="tinted"/>
+      <feMerge>
+        <feMergeNode in="tinted"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="glow-pulse" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>
+      <feColorMatrix in="blur" type="matrix"
+        values="0 0 0 0 0  0 1 0 0 0.9  0 0 0 0 0.7  0 0 0 1 0" result="tinted"/>
+      <feMerge>
+        <feMergeNode in="tinted"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="star-glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="blur"/>
+      <feColorMatrix in="blur" type="matrix"
+        values="1 0 0 0 0  0 1 0 0 1  0 0 1 0 1  0 0 0 3 0" result="tinted"/>
+      <feMerge>
+        <feMergeNode in="tinted"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="glitch-r" x="-5%" y="-5%" width="115%" height="115%">
+      <feOffset dx="2" dy="0"/>
+      <feFlood flood-color="#ff003c" flood-opacity="0.7" result="color"/>
+      <feComposite in="color" in2="SourceGraphic" operator="in"/>
+    </filter>
+
+    <filter id="glitch-c" x="-5%" y="-5%" width="115%" height="115%">
+      <feOffset dx="-2" dy="0"/>
+      <feFlood flood-color="#00fff0" flood-opacity="0.7" result="color"/>
+      <feComposite in="color" in2="SourceGraphic" operator="in"/>
+    </filter>
+
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="{{.Theme.Background}}"/>
       <stop offset="100%" stop-color="{{.Theme.BackgroundColorGradientOne}}"/>
     </linearGradient>
 
-    </defs>
+    <linearGradient id="edge-top" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="rgba(0,255,180,0)"/>
+      <stop offset="30%" stop-color="rgba(0,255,180,0.9)"/>
+      <stop offset="70%" stop-color="rgba(0,200,255,0.7)"/>
+      <stop offset="100%" stop-color="rgba(0,255,180,0)"/>
+    </linearGradient>
+
+    <linearGradient id="corner-accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00ffb4"/>
+      <stop offset="100%" stop-color="#00c8ff"/>
+    </linearGradient>
+
+    <linearGradient id="shimmer" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0)"/>
+      <stop offset="45%" stop-color="rgba(255,255,255,0)"/>
+      <stop offset="50%" stop-color="rgba(255,255,255,0.25)"/>
+      <stop offset="55%" stop-color="rgba(255,255,255,0)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+      <animateTransform attributeName="gradientTransform" type="translate"
+        from="-1 0" to="2 0" dur="2.5s" repeatCount="indefinite"/>
+    </linearGradient>
+
+    <clipPath id="card-clip">
+      <rect width="460" height="215" rx="14"/>
+    </clipPath>
+  </defs>
 
   <rect width="460" height="215" rx="14" fill="url(#bg)"/>
 
+  <rect width="460" height="215" rx="14" fill="rgba(0,255,180,0.015)">
+    <animate attributeName="opacity" values="0;1;0" dur="4s" repeatCount="indefinite"/>
+  </rect>
+
+  <g clip-path="url(#card-clip)" opacity="0.1">
+    <line x1="0" y1="35" x2="460" y2="35" stroke="#00ffb4" stroke-width="0.5"/>
+    <line x1="0" y1="70" x2="460" y2="70" stroke="#00ffb4" stroke-width="0.5"/>
+    <line x1="0" y1="105" x2="460" y2="105" stroke="#00ffb4" stroke-width="0.5"/>
+    <line x1="0" y1="140" x2="460" y2="140" stroke="#00ffb4" stroke-width="0.5"/>
+    <line x1="0" y1="175" x2="460" y2="175" stroke="#00ffb4" stroke-width="0.5"/>
+    <line x1="92" y1="0" x2="92" y2="215" stroke="#00ffb4" stroke-width="0.5"/>
+    <line x1="184" y1="0" x2="184" y2="215" stroke="#00ffb4" stroke-width="0.5"/>
+    <line x1="276" y1="0" x2="276" y2="215" stroke="#00ffb4" stroke-width="0.5"/>
+    <line x1="368" y1="0" x2="368" y2="215" stroke="#00ffb4" stroke-width="0.5"/>
+  </g>
+
+  <rect width="460" height="215" rx="14" fill="url(#scan-sweep)" clip-path="url(#card-clip)" opacity="0.5"/>
+
+  <rect width="460" height="215" rx="14" fill="url(#scanlines)" clip-path="url(#card-clip)"/>
+
+  <rect x="0" y="0" width="460" height="1.5" rx="1" fill="url(#edge-top)" clip-path="url(#card-clip)">
+    <animate attributeName="opacity" values="0.7;1;0.4;1;0.8;1" dur="5s" repeatCount="indefinite"/>
+  </rect>
+
+  <g filter="url(#glow)">
+    <polyline points="6,22 6,6 22,6" stroke="#00ffb4" stroke-width="1.5" fill="none"
+      stroke-dasharray="32" stroke-dashoffset="32">
+      <animate attributeName="stroke-dashoffset" from="32" to="0" dur="1s" fill="freeze" repeatCount="1"/>
+    </polyline>
+    <polyline points="438,6 454,6 454,22" stroke="#00c8ff" stroke-width="1.5" fill="none"
+      stroke-dasharray="32" stroke-dashoffset="32">
+      <animate attributeName="stroke-dashoffset" from="32" to="0" dur="1s" begin="0.15s" fill="freeze" repeatCount="1"/>
+    </polyline>
+    <polyline points="6,193 6,209 22,209" stroke="#00ffb4" stroke-width="1.5" fill="none"
+      stroke-dasharray="32" stroke-dashoffset="32">
+      <animate attributeName="stroke-dashoffset" from="32" to="0" dur="1s" begin="0.3s" fill="freeze" repeatCount="1"/>
+    </polyline>
+    <polyline points="438,209 454,209 454,193" stroke="#00c8ff" stroke-width="1.5" fill="none"
+      stroke-dasharray="32" stroke-dashoffset="32">
+      <animate attributeName="stroke-dashoffset" from="32" to="0" dur="1s" begin="0.45s" fill="freeze" repeatCount="1"/>
+    </polyline>
+  </g>
+
+  <circle cx="6" cy="6" r="2" fill="#00ffb4" filter="url(#star-glow)">
+    <animate attributeName="r" values="2;3;2" dur="2s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="1;0.4;1" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="454" cy="6" r="2" fill="#00c8ff" filter="url(#star-glow)">
+    <animate attributeName="r" values="2;3;2" dur="2.3s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="1;0.4;1" dur="2.3s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="6" cy="209" r="2" fill="#00ffb4" filter="url(#star-glow)">
+    <animate attributeName="r" values="2;3;2" dur="1.8s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="1;0.4;1" dur="1.8s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="454" cy="209" r="2" fill="#00c8ff" filter="url(#star-glow)">
+    <animate attributeName="r" values="2;3;2" dur="2.6s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="1;0.4;1" dur="2.6s" repeatCount="indefinite"/>
+  </circle>
+
+  <rect x="16" y="14" width="2" height="26" rx="1" fill="url(#corner-accent)" filter="url(#glow)">
+    <animate attributeName="opacity" values="0.6;1;0.6" dur="2s" repeatCount="indefinite"/>
+  </rect>
+
   <g>
-    <text x="24" y="29"
-      font-family="'Courier New', monospace" font-size="18" font-weight="900" letter-spacing="3"
-      fill="{{.Theme.Foreground}}" filter="url(#glow)">
+    <text x="24" y="29" font-family="'Courier New', monospace" font-size="18" font-weight="900" letter-spacing="3" fill="#ff003c" filter="url(#glitch-r)">
+      {{.Username}}
+      <animate attributeName="opacity" values="0;0;0.8;0;0;0;0.6;0;0" dur="4.5s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0;3,0;0,0;-2,0;0,0;0,0;4,0;0,0" dur="4.5s" repeatCount="indefinite"/>
+    </text>
+    <text x="24" y="29" font-family="'Courier New', monospace" font-size="18" font-weight="900" letter-spacing="3" fill="#00fff0" filter="url(#glitch-c)">
+      {{.Username}}
+      <animate attributeName="opacity" values="0;0;0;0.7;0;0;0;0.5;0" dur="4.5s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0;0,0;-3,0;0,0;2,0;0,0;0,0;-4,0" dur="4.5s" repeatCount="indefinite"/>
+    </text>
+    <text x="24" y="29" font-family="'Courier New', monospace" font-size="18" font-weight="900" letter-spacing="3" fill="{{.Theme.Foreground}}" filter="url(#glow)">
       {{.Username}}
       <animate attributeName="opacity" values="1;1;1;1;0.2;1;1;1;0.3;1" dur="7s" repeatCount="indefinite"/>
     </text>
   </g>
 
-  <rect x="24" y="34" width="80" height="12" rx="2" fill="none" stroke="{{.Theme.Muted}}" stroke-width="0.5" opacity="0.8">
+  <rect x="24" y="34" width="80" height="12" rx="2" fill="rgba(0,255,180,0.08)" stroke="#00ffb4" stroke-width="0.5">
     <animate attributeName="stroke-opacity" values="0.5;1;0.5" dur="3s" repeatCount="indefinite"/>
   </rect>
-  
-  <text x="28" y="44"
-    font-family="'Courier New', monospace" font-size="8" font-weight="400" letter-spacing="2"
-    fill="{{.Theme.Muted}}" opacity="0.8">{{.BannerType}}</text>
+  <text x="28" y="44" font-family="'Courier New', monospace" font-size="8" font-weight="400" letter-spacing="2" fill="#00ffb4" opacity="0.8">{{.BannerType}}</text>
 
-  <line x1="16" y1="55" x2="444" y2="55" stroke="{{.Theme.Muted}}" stroke-width="0.5" opacity="0.3"/>
-  <line x1="16" y1="56" x2="444" y2="56" stroke="{{.Theme.Muted}}" stroke-width="1.5" filter="url(#glow)"
-    stroke-dasharray="428" stroke-dashoffset="428">
+  <text x="430" y="20" text-anchor="end" font-family="'Courier New', monospace" font-size="7" letter-spacing="1" fill="#00c8ff" opacity="0.5">SYS_ID::4F2A</text>
+  <text x="408" y="30" text-anchor="end" font-family="'Courier New', monospace" font-size="7" letter-spacing="1" fill="#00ffb4" opacity="0.6">ONLINE</text>
+  <rect x="410" y="22" width="5" height="9" rx="0" fill="#00ffb4">
+    <animate attributeName="opacity" values="1;1;0;0;1;1;0" dur="1.2s" repeatCount="indefinite"/>
+  </rect>
+
+  <line x1="16" y1="55" x2="444" y2="55" stroke="#00ffb4" stroke-width="0.5" opacity="0.3"/>
+  <line x1="16" y1="56" x2="444" y2="56" stroke="#00ffb4" stroke-width="1.5" filter="url(#glow)" stroke-dasharray="428" stroke-dashoffset="428">
     <animate attributeName="stroke-dashoffset" from="428" to="0" dur="1.5s" fill="freeze" repeatCount="1"/>
     <animate attributeName="opacity" values="0.6;1;0.6" begin="1.5s" dur="3s" repeatCount="indefinite"/>
   </line>
 
-  <text x="24" y="76" font-family="'Courier New', monospace" font-size="8" letter-spacing="2" fill="{{.Theme.Muted}}" opacity="0.6">REPOS</text>
+  <rect x="16" y="62" width="120" height="42" rx="4" fill="rgba(0,255,180,0.03)" stroke="rgba(0,255,180,0.2)" stroke-width="0.5">
+    <animate attributeName="stroke-opacity" values="0.2;0.6;0.2" dur="3s" repeatCount="indefinite"/>
+    <animate attributeName="fill-opacity" values="0.03;0.07;0.03" dur="3s" repeatCount="indefinite"/>
+  </rect>
+  <text x="24" y="76" font-family="'Courier New', monospace" font-size="8" letter-spacing="2" fill="#00ffb4" opacity="0.6">REPOS</text>
   <text x="24" y="96" font-family="'Courier New', monospace" font-size="20" font-weight="900" letter-spacing="1" fill="{{.Theme.Foreground}}" filter="url(#glow)">
     {{.Stats.TotalRepos}}
     <animate attributeName="opacity" values="1;0.8;1" dur="4s" repeatCount="indefinite"/>
   </text>
 
-  <text x="158" y="76" font-family="'Courier New', monospace" font-size="8" letter-spacing="2" fill="{{.Theme.Muted}}" opacity="0.6">STARS</text>
+  <rect x="150" y="62" width="120" height="42" rx="4" fill="rgba(0,200,255,0.03)" stroke="rgba(0,200,255,0.2)" stroke-width="0.5">
+    <animate attributeName="stroke-opacity" values="0.2;0.6;0.2" dur="3.4s" repeatCount="indefinite"/>
+    <animate attributeName="fill-opacity" values="0.03;0.07;0.03" dur="3.4s" repeatCount="indefinite"/>
+  </rect>
+  <text x="158" y="76" font-family="'Courier New', monospace" font-size="8" letter-spacing="2" fill="#00c8ff" opacity="0.6">STARS</text>
   <text x="158" y="96" font-family="'Courier New', monospace" font-size="20" font-weight="900" letter-spacing="1" fill="{{.Theme.Foreground}}" filter="url(#glow)">
     {{.Stats.TotalStars}}
     <animate attributeName="opacity" values="1;0.8;1" dur="3.5s" repeatCount="indefinite"/>
   </text>
 
-  <text x="292" y="76" font-family="'Courier New', monospace" font-size="8" letter-spacing="2" fill="{{.Theme.Muted}}" opacity="0.6">FORKS</text>
+  <rect x="284" y="62" width="120" height="42" rx="4" fill="rgba(255,0,255,0.03)" stroke="rgba(255,0,255,0.18)" stroke-width="0.5">
+    <animate attributeName="stroke-opacity" values="0.18;0.5;0.18" dur="2.8s" repeatCount="indefinite"/>
+    <animate attributeName="fill-opacity" values="0.03;0.07;0.03" dur="2.8s" repeatCount="indefinite"/>
+  </rect>
+  <text x="292" y="76" font-family="'Courier New', monospace" font-size="8" letter-spacing="2" fill="#ff00ff" opacity="0.6">FORKS</text>
   <text x="292" y="96" font-family="'Courier New', monospace" font-size="20" font-weight="900" letter-spacing="1" fill="{{.Theme.Foreground}}" filter="url(#glow)">
     {{.Stats.TotalForks}}
     <animate attributeName="opacity" values="1;0.8;1" dur="4.2s" repeatCount="indefinite"/>
   </text>
 
-  <text x="16" y="126" font-family="'Courier New', monospace" font-size="7" letter-spacing="2" fill="{{.Theme.Muted}}">
+  <text x="16" y="126" font-family="'Courier New', monospace" font-size="7" letter-spacing="2" fill="#00ffb4">
     LANG_DISTRIBUTION ────────────────────────────
     <animate attributeName="opacity" values="0.4;0.7;0.4" dur="4s" repeatCount="indefinite"/>
   </text>
 
-  <rect x="16" y="134" width="428" height="10" rx="5" fill="{{.Theme.Muted}}" opacity="0.05" stroke="{{.Theme.Muted}}" stroke-opacity="0.1" stroke-width="0.5"/>
+  <rect x="16" y="134" width="428" height="10" rx="5" fill="rgba(0,255,180,0.05)" stroke="rgba(0,255,180,0.1)" stroke-width="0.5"/>
 
   <g clip-path="url(#card-clip)">
     {{range .Languages}}
@@ -66,13 +231,38 @@
     {{end}}
   </g>
 
+  <rect x="16" y="134" width="428" height="10" rx="5" fill="url(#shimmer)" clip-path="url(#card-clip)"/>
+  <rect x="16" y="134" width="6" height="10" rx="5" fill="rgba(0,0,0,0.6)"/>
+  <rect x="438" y="134" width="6" height="10" rx="5" fill="rgba(0,0,0,0.6)"/>
+  <rect x="16" y="134" width="428" height="3" rx="1" fill="rgba(255,255,255,0.06)" clip-path="url(#card-clip)"/>
+
   {{range .Legend}}
   <rect x="{{.DotX}}" y="{{.DotY}}" width="8" height="8" rx="2" fill="{{.Color}}" opacity="0.9"/>
-  <text x="{{.TextX}}" y="{{.TextY}}" font-family="'Courier New', monospace" font-size="8" letter-spacing="0.5" fill="{{$.Theme.Muted}}" opacity="0.85">{{.Label}}</text>
+  <text x="{{.TextX}}" y="{{.TextY}}" font-family="'Courier New', monospace" font-size="8" letter-spacing="0.5" fill="{{$.Theme.Foreground}}" opacity="0.85">{{.Label}}</text>
   {{end}}
 
-  <line x1="16" y1="196" x2="444" y2="196" stroke="{{.Theme.Muted}}" stroke-width="0.5" opacity="0.15"/>
-  <text x="16" y="208" font-family="'Courier New', monospace" font-size="7" letter-spacing="1" fill="{{.Theme.Muted}}" opacity="0.35">▶ GENERATED</text>
-  <text x="440" y="208" text-anchor="end" font-family="'Courier New', monospace" font-size="7" letter-spacing="1" fill="{{.Theme.Muted}}" opacity="0.35">{{.FormattedTime}}</text>
-  
-  </svg>
+  <line x1="16" y1="196" x2="444" y2="196" stroke="#00ffb4" stroke-width="0.5" opacity="0.15"/>
+  <text x="16" y="208" font-family="'Courier New', monospace" font-size="7" letter-spacing="1" fill="#00ffb4" opacity="0.35">▶ GENERATED</text>
+  <text x="440" y="208" text-anchor="end" font-family="'Courier New', monospace" font-size="7" letter-spacing="1" fill="#00ffb4" opacity="0.35">{{.FormattedTime}}</text>
+
+  <g font-family="'Courier New', monospace" font-size="7" fill="#00ffb4">
+    <text x="420" y="48"><animate attributeName="opacity" values="0.15;0.5;0.15;0.3;0.15" dur="1.3s" repeatCount="indefinite"/>1</text>
+    <text x="428" y="48"><animate attributeName="opacity" values="0.2;0.15;0.45;0.1;0.2" dur="1.7s" repeatCount="indefinite"/>0</text>
+    <text x="436" y="48"><animate attributeName="opacity" values="0.1;0.4;0.1;0.5;0.1" dur="1.1s" repeatCount="indefinite"/>1</text>
+    <text x="420" y="56"><animate attributeName="opacity" values="0.3;0.1;0.5;0.2;0.3" dur="0.9s" repeatCount="indefinite"/>0</text>
+    <text x="428" y="56"><animate attributeName="opacity" values="0.4;0.2;0.1;0.4;0.2" dur="1.5s" repeatCount="indefinite"/>1</text>
+    <text x="436" y="56"><animate attributeName="opacity" values="0.1;0.5;0.2;0.1;0.4" dur="1.2s" repeatCount="indefinite"/>1</text>
+    <text x="420" y="64"><animate attributeName="opacity" values="0.5;0.1;0.3;0.5;0.1" dur="1.4s" repeatCount="indefinite"/>0</text>
+    <text x="428" y="64"><animate attributeName="opacity" values="0.2;0.4;0.1;0.2;0.5" dur="1.6s" repeatCount="indefinite"/>1</text>
+    <text x="436" y="64"><animate attributeName="opacity" values="0.3;0.1;0.4;0.3;0.1" dur="1.0s" repeatCount="indefinite"/>0</text>
+  </g>
+
+  <rect x="0" y="85" width="460" height="4" fill="rgba(0,255,180,0.15)" clip-path="url(#card-clip)">
+    <animate attributeName="opacity" values="0;0;0;0;0;0;0;0;1;0;0;0;0;0;0;1;0;0" dur="6s" repeatCount="indefinite"/>
+    <animate attributeName="y" values="85;92;85;120;85;77;85" dur="6s" repeatCount="indefinite"/>
+  </rect>
+  <rect x="0" y="45" width="230" height="2" fill="rgba(255,0,60,0.3)" clip-path="url(#card-clip)">
+    <animate attributeName="opacity" values="0;0;0;0;0;0;1;0;0;0;0;0;0;0;0.5;0" dur="8s" repeatCount="indefinite"/>
+    <animateTransform attributeName="transform" type="translate" values="0,0;40,8;0,0;-20,3;0,0" dur="8s" repeatCount="indefinite"/>
+  </rect>
+</svg>
