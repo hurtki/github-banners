@@ -3,7 +3,6 @@ package templates
 import (
 	"bytes"
 	"embed"
-	"fmt"
 	"html/template"
 
 	"github.com/hurtki/github-banners/renderer/internal/domain/render"
@@ -27,7 +26,7 @@ func NewRenderer() (*Renderer, error) {
 
 func (r *Renderer) RenderBanner(view *layout.BannerView) ([]byte, error) {
 	var buf bytes.Buffer
-	templateName := fmt.Sprintf("%s.svg", view.BannerType)
+	templateName := "banner.svg"
 
 	if err := r.tmpl.ExecuteTemplate(&buf, templateName, view); err != nil {
 		return nil, render.ErrRenderFailure

@@ -1,0 +1,78 @@
+<svg width="460" height="215" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="{{.Theme.Background}}"/>
+      <stop offset="100%" stop-color="{{.Theme.BackgroundColorGradientOne}}"/>
+    </linearGradient>
+
+    </defs>
+
+  <rect width="460" height="215" rx="14" fill="url(#bg)"/>
+
+  <g>
+    <text x="24" y="29"
+      font-family="'Courier New', monospace" font-size="18" font-weight="900" letter-spacing="3"
+      fill="{{.Theme.Foreground}}" filter="url(#glow)">
+      {{.Username}}
+      <animate attributeName="opacity" values="1;1;1;1;0.2;1;1;1;0.3;1" dur="7s" repeatCount="indefinite"/>
+    </text>
+  </g>
+
+  <rect x="24" y="34" width="80" height="12" rx="2" fill="none" stroke="{{.Theme.Muted}}" stroke-width="0.5" opacity="0.8">
+    <animate attributeName="stroke-opacity" values="0.5;1;0.5" dur="3s" repeatCount="indefinite"/>
+  </rect>
+  
+  <text x="28" y="44"
+    font-family="'Courier New', monospace" font-size="8" font-weight="400" letter-spacing="2"
+    fill="{{.Theme.Muted}}" opacity="0.8">{{.BannerType}}</text>
+
+  <line x1="16" y1="55" x2="444" y2="55" stroke="{{.Theme.Muted}}" stroke-width="0.5" opacity="0.3"/>
+  <line x1="16" y1="56" x2="444" y2="56" stroke="{{.Theme.Muted}}" stroke-width="1.5" filter="url(#glow)"
+    stroke-dasharray="428" stroke-dashoffset="428">
+    <animate attributeName="stroke-dashoffset" from="428" to="0" dur="1.5s" fill="freeze" repeatCount="1"/>
+    <animate attributeName="opacity" values="0.6;1;0.6" begin="1.5s" dur="3s" repeatCount="indefinite"/>
+  </line>
+
+  <text x="24" y="76" font-family="'Courier New', monospace" font-size="8" letter-spacing="2" fill="{{.Theme.Muted}}" opacity="0.6">REPOS</text>
+  <text x="24" y="96" font-family="'Courier New', monospace" font-size="20" font-weight="900" letter-spacing="1" fill="{{.Theme.Foreground}}" filter="url(#glow)">
+    {{.Stats.TotalRepos}}
+    <animate attributeName="opacity" values="1;0.8;1" dur="4s" repeatCount="indefinite"/>
+  </text>
+
+  <text x="158" y="76" font-family="'Courier New', monospace" font-size="8" letter-spacing="2" fill="{{.Theme.Muted}}" opacity="0.6">STARS</text>
+  <text x="158" y="96" font-family="'Courier New', monospace" font-size="20" font-weight="900" letter-spacing="1" fill="{{.Theme.Foreground}}" filter="url(#glow)">
+    {{.Stats.TotalStars}}
+    <animate attributeName="opacity" values="1;0.8;1" dur="3.5s" repeatCount="indefinite"/>
+  </text>
+
+  <text x="292" y="76" font-family="'Courier New', monospace" font-size="8" letter-spacing="2" fill="{{.Theme.Muted}}" opacity="0.6">FORKS</text>
+  <text x="292" y="96" font-family="'Courier New', monospace" font-size="20" font-weight="900" letter-spacing="1" fill="{{.Theme.Foreground}}" filter="url(#glow)">
+    {{.Stats.TotalForks}}
+    <animate attributeName="opacity" values="1;0.8;1" dur="4.2s" repeatCount="indefinite"/>
+  </text>
+
+  <text x="16" y="126" font-family="'Courier New', monospace" font-size="7" letter-spacing="2" fill="{{.Theme.Muted}}">
+    LANG_DISTRIBUTION ────────────────────────────
+    <animate attributeName="opacity" values="0.4;0.7;0.4" dur="4s" repeatCount="indefinite"/>
+  </text>
+
+  <rect x="16" y="134" width="428" height="10" rx="5" fill="{{.Theme.Muted}}" opacity="0.05" stroke="{{.Theme.Muted}}" stroke-opacity="0.1" stroke-width="0.5"/>
+
+  <g clip-path="url(#card-clip)">
+    {{range .Languages}}
+    <rect x="{{.X}}" y="134" width="{{.Width}}" height="10" rx="0" fill="{{.Color}}">
+      <animate attributeName="width" from="0" to="{{.Width}}" dur="1.2s" fill="freeze" repeatCount="1"/>
+    </rect>
+    {{end}}
+  </g>
+
+  {{range .Legend}}
+  <rect x="{{.DotX}}" y="{{.DotY}}" width="8" height="8" rx="2" fill="{{.Color}}" opacity="0.9"/>
+  <text x="{{.TextX}}" y="{{.TextY}}" font-family="'Courier New', monospace" font-size="8" letter-spacing="0.5" fill="{{$.Theme.Muted}}" opacity="0.85">{{.Label}}</text>
+  {{end}}
+
+  <line x1="16" y1="196" x2="444" y2="196" stroke="{{.Theme.Muted}}" stroke-width="0.5" opacity="0.15"/>
+  <text x="16" y="208" font-family="'Courier New', monospace" font-size="7" letter-spacing="1" fill="{{.Theme.Muted}}" opacity="0.35">▶ GENERATED</text>
+  <text x="440" y="208" text-anchor="end" font-family="'Courier New', monospace" font-size="7" letter-spacing="1" fill="{{.Theme.Muted}}" opacity="0.35">{{.FormattedTime}}</text>
+  
+  </svg>

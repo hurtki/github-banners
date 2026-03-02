@@ -19,7 +19,7 @@ func BuildView(info domain.BannerInfo) *BannerView {
 
 	var theme Theme
 
-	if info.BannerType == domain.BannerTypeDark {
+	if string(info.BannerType) == "dark" || string(info.BannerType) == string(domain.BannerTypeDark) {
 		theme = Theme{
 			Background:                 "#0d1117",
 			Foreground:                 "#e6edf3",
