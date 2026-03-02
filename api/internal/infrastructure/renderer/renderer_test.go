@@ -58,8 +58,8 @@ func TestRenderer_RenderPreview(t *testing.T) {
 				}),
 				Body: &StringBody{strings.NewReader("<svg></svg>")},
 			},
-			bannerInfo: domain.BannerInfo{},
-			want:       &domain.Banner{Username: "", BannerType: domain.TypeWide, Banner: baseBodyBytes},
+			bannerInfo: domain.BannerInfo{BannerType: domain.TypeDark},
+			want:       &domain.Banner{Username: "", BannerType: domain.TypeDark, Banner: baseBodyBytes},
 			wantedErr:  nil,
 		},
 		{
