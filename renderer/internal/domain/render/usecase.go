@@ -27,40 +27,52 @@ func NewUsecase(r BannerRenderer, s BannerStorage) *Usecase {
 	}
 }
 
-func (u *Usecase) Execute(ctx context.Context, req domain.BannerInfo) error {
-	if err := u.validate(req); err != nil {
+func (u *Usecase) ProcessBanner(ctx context.Context, req UpdateBannerIn) error {
+	ltInfo, err := u.validate(req)
+	if err != nil {
 		return err
 	}
 
-	view := layout.BuildView(req)
+	view := layout.BuildView(ltInfo.BannerInfo)
 
 	renderedData, err := u.renderer.RenderBanner(view)
 	if err != nil {
 		return err
 	}
 
-	_, err = u.storage.SaveBanner(ctx, req.URLPath, string(renderedData))
+	_, err = u.storage.SaveBanner(ctx, ltInfo.URLPath, string(renderedData))
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
-func (u *Usecase) validate(info domain.BannerInfo) error {
-	if info.Username == "" {
-		return ErrInvalidUsername
+func (u *Usecase) validate(req UpdateBannerIn) (domain.LTBannerInfo, error) {
+	if req.Username == "" {
+		return domain.LTBannerInfo{}, ErrInvalidUsername
 	}
 
-	if info.URLPath == "" {
-		return ErrInvalidUrlPath
+	if req.URLPath == "" {
+		return domain.LTBannerInfo{}, ErrInvalidUrlPath
 	}
 
-	switch info.BannerType {
-	case domain.BannerTypeDefault, domain.BannerTypeDark:
-		// valid
+	bannerType := domain.BannerTypeDefault
+
+	switch req.BannerType {
+	case string(domain.BannerTypeDark):
+		bannerType = domain.BannerTypeDark
+	case string(domain.BannerTypeDefault):
+		bannerType = domain.BannerTypeDefault
 	default:
-		return ErrInvalidBannerType
+		return domain.LTBannerInfo{}, ErrInvalidBannerType
 	}
-	return nil
+
+	return domain.LTBannerInfo{
+		URLPath: req.URLPath,
+		BannerInfo: domain.BannerInfo{
+			Username:   req.Username,
+			BannerType: bannerType,
+			Stats:      req.Stats,
+		},
+	}, nil
 }
