@@ -3,15 +3,18 @@ package domain
 type BannerType int
 
 const (
-	TypeWide BannerType = iota
+	TypeDefault BannerType = iota
+	TypeDark    BannerType = iota
 )
 
 var BannerTypes = map[string]BannerType{
-	"wide": TypeWide,
+	"default": TypeDefault,
+	"dark":    TypeDark,
 }
 
 var BannerTypesBackward = map[BannerType]string{
-	TypeWide: "wide",
+	TypeDefault: "default",
+	TypeDark:    "dark",
 }
 
 // BannerInfo is all data that banner contains
