@@ -3,9 +3,10 @@ package layout
 import "github.com/hurtki/github-banners/renderer/internal/domain"
 
 type Theme struct {
-	Background string
-	Foreground string
-	Muted      string
+	Background                 string
+	Foreground                 string
+	Muted                      string
+	BackgroundColorGradientOne string
 }
 
 type LanguageSegment struct {
