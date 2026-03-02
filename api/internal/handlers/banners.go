@@ -84,10 +84,11 @@ func (h *BannersHandler) Create(rw http.ResponseWriter, req *http.Request) {
 		case errors.Is(err, longterm.ErrInvalidBannerType):
 			h.error(rw, http.StatusBadRequest, err.Error())
 		case errors.Is(err, longterm.ErrCantCreateBanner):
-			h.error(rw, http.StatusInternalServerError, err.Error())
+			h.logger.Error("failed to create long-term banner", "source", fn, "err", err)
+			h.error(rw, http.StatusInternalServerError, "Failed to process banner creation request")
 		default:
 			h.logger.Warn("unhandled error from usecase", "source", fn, "err", err)
-			h.error(rw, http.StatusInternalServerError, "can't create banner")
+			h.error(rw, http.StatusInternalServerError, "Failed to process banner creation request")
 		}
 		return
 	}
