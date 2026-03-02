@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/hurtki/github-banners/renderer/internal/config"
+	"github.com/hurtki/github-banners/renderer/internal/domain/render"
+	"github.com/hurtki/github-banners/renderer/internal/domain/templates"
 	"github.com/hurtki/github-banners/renderer/internal/handlers"
 	"github.com/hurtki/github-banners/renderer/internal/infrastructure/clients/storage"
 	httpauth "github.com/hurtki/github-banners/renderer/internal/infrastructure/httpauth"
@@ -31,7 +33,17 @@ func main() {
 		Timeout:   time.Second * 15,
 	}
 
-	_ = storage.NewClient(cfg.StorageBaseURL, httpClient, logger)
+	storageClient := storage.NewClient(cfg.StorageBaseURL, httpClient, logger)
+
+	renderer, err := templates.NewRenderer()
+	if err != nil {
+		logger.Error("can't initialize renderer templates", "err", err)
+		os.Exit(1)
+	}
+
+	renderUsecase := render.NewUsecase(renderer, storageClient)
+	_ = renderUsecase
+
 	bannerUpdateHandler := handlers.NewBannerUpdateHandler(logger)
 
 	cgHandlerCfg := config.NewKafkaCGHandlerConfig()

@@ -18,7 +18,7 @@ func TestServiceGetPreviewSuccessFromCache(t *testing.T) {
 
 	service := NewPreviewService(renderer, cache)
 
-	bnrInfo := domain.BannerInfo{Username: "hurtki", BannerType: domain.TypeWide}
+	bnrInfo := domain.BannerInfo{Username: "hurtki", BannerType: domain.TypeDark}
 	expectedBanner := domain.Banner{Username: bnrInfo.Username, BannerType: bnrInfo.BannerType, Banner: []byte("some")}
 
 	hash := "frefrfref"
@@ -36,7 +36,7 @@ func TestServiceGetPreviewSuccessNoCache(t *testing.T) {
 
 	service := NewPreviewService(renderer, cache)
 
-	bnrInfo := domain.BannerInfo{Username: "hurtki", BannerType: domain.TypeWide}
+	bnrInfo := domain.BannerInfo{Username: "hurtki", BannerType: domain.TypeDark}
 	expectedBanner := domain.Banner{Username: bnrInfo.Username, BannerType: bnrInfo.BannerType, Banner: []byte("some")}
 	hash := "frefrfref"
 	ctx := t.Context()
@@ -58,7 +58,7 @@ func TestServiceGetPreviewErrorsHandling(t *testing.T) {
 
 	service := NewPreviewService(renderer, cache)
 
-	bnrInfo := domain.BannerInfo{Username: "hurtki", BannerType: domain.TypeWide}
+	bnrInfo := domain.BannerInfo{Username: "hurtki", BannerType: domain.TypeDark}
 	hash := "freferfre"
 	ctx := t.Context()
 
