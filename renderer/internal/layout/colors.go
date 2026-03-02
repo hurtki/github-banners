@@ -41,4 +41,5 @@ var knownLanguageColors = map[string]string{
 	"Dockerfile": "#384d54",
 	"Makefile":   "#427819",
 	"Brainfuck":  "#59491c",
+	"Other":      "#8b949e",
 }

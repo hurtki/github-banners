@@ -14,22 +14,24 @@ func BuildView(info domain.BannerInfo) *BannerView {
 		H        = 210
 		pad      = 20
 		barWidth = W - pad*2
-		maxLangs = 6
+		maxLangs = 5
 	)
 
 	var theme Theme
 
 	if info.BannerType == domain.BannerTypeDark {
 		theme = Theme{
-			Background: "#d1117",
-			Foreground: "#e6edf",
-			Muted:      "8b949e",
+			Background:                 "#0d1117",
+			Foreground:                 "#e6edf3",
+			Muted:                      "#8b949e",
+			BackgroundColorGradientOne: "#161b22",
 		}
 	} else {
 		theme = Theme{
-			Background: "#f6f8fa",
-			Foreground: "#24292f",
-			Muted:      "#57606a",
+			Background:                 "#f6f8fa",
+			Foreground:                 "#24292f",
+			Muted:                      "#57606a",
+			BackgroundColorGradientOne: "#ffffff",
 		}
 	}
 
@@ -53,7 +55,14 @@ func BuildView(info domain.BannerInfo) *BannerView {
 	})
 
 	if len(sorted) > maxLangs {
-		sorted = sorted[:maxLangs]
+		other := 0
+		for _, l := range sorted[maxLangs:] {
+			other += l.Value
+		}
+		sorted = append(sorted[:maxLangs], kv{
+			Name:  "Other",
+			Value: other,
+		})
 	}
 
 	var segments []LanguageSegment
@@ -69,10 +78,7 @@ func BuildView(info domain.BannerInfo) *BannerView {
 			pct = math.Round(float64(l.Value)/float64(total)*1000) / 10
 		}
 
-		w := int(pct / 100 * float64(barWidth))
-		if w < l {
-			w = 1
-		}
+		w := max(int(pct/100*float64(barWidth)), 1)
 		color := langColorHash(l.Name)
 
 		segments = append(segments, LanguageSegment{
