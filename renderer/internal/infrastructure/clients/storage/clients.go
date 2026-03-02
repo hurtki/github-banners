@@ -15,11 +15,10 @@ import (
 	"github.com/hurtki/github-banners/renderer/internal/logger"
 )
 
-
 type Client struct {
-	baseURL 	string 
-	httpClient 	*http.Client
-	logger 		logger.Logger
+	baseURL    string
+	httpClient *http.Client
+	logger     logger.Logger
 }
 
 func NewClient(baseURL string, httpClient *http.Client, logger logger.Logger) *Client {
@@ -34,9 +33,9 @@ func NewClient(baseURL string, httpClient *http.Client, logger logger.Logger) *C
 	}
 
 	return &Client{
-		baseURL: strings.TrimRight(baseURL, "/"),
+		baseURL:    strings.TrimRight(baseURL, "/"),
 		httpClient: httpClient,
-		logger: logger.With("component", "storage-client"),
+		logger:     logger.With("component", "storage-client"),
 	}
 }
 
@@ -44,11 +43,11 @@ func (c *Client) SaveBanner(ctx context.Context, bannerID string, svg string) (s
 	const fn = "infrastructure.clients.storage.SaveBanner"
 
 	start := time.Now()
-	
+
 	encoded := base64.StdEncoding.EncodeToString([]byte(svg))
 	reqBody := SaveRequest{
-		URLPath: bannerID,
-		BannerData: encoded,
+		URLPath:      bannerID,
+		BannerData:   encoded,
 		BannerFormat: "svg",
 	}
 
@@ -71,14 +70,14 @@ func (c *Client) SaveBanner(ctx context.Context, bannerID string, svg string) (s
 		c.logger.Error("storage request execution failed (network/timeout)", "err", err, "fn", fn)
 		return "", fmt.Errorf("%s: do request: %w, %w", fn, err, domain.ErrUnavailable)
 	}
-	
+
 	defer resp.Body.Close()
 
 	duration := time.Since(start)
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		respBody, _ := io.ReadAll(resp.Body)
-		c.logger.Error("storage upload failed","status", resp.StatusCode, "banner_id", bannerID, "body", string(respBody), "duration", duration)
+		c.logger.Error("storage upload failed", "status", resp.StatusCode, "banner_id", bannerID, "body", string(respBody), "duration", duration)
 		return "", fmt.Errorf("storage returned status %d, %w", resp.StatusCode, domain.ErrUnavailable)
 	}
 

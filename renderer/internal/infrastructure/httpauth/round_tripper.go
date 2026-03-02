@@ -8,10 +8,10 @@ import (
 )
 
 type SigningRoundTripper struct {
-	base 			http.RoundTripper
-	serviceName 	string 
-	signer 			Signer
-	clock 			func() time.Time
+	base        http.RoundTripper
+	serviceName string
+	signer      Signer
+	clock       func() time.Time
 }
 
 type Signer interface {
@@ -27,20 +27,20 @@ func NewAuthHTTPRoundTripper(serviceName string, signer Signer, clock func() tim
 	}
 
 	return &SigningRoundTripper{
-		base: 			http.DefaultTransport, 
-		serviceName: 	serviceName,
-		signer: 		signer, 
-		clock: 			clock,
+		base:        http.DefaultTransport,
+		serviceName: serviceName,
+		signer:      signer,
+		clock:       clock,
 	}
-} 
+}
 
 func (rt *SigningRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	ts := rt.clock().Unix()
 
 	canonical := strings.Join([]string{
-		req.Method, 
-		req.URL.Path, 
-		strconv.FormatInt(ts, 10), 
+		req.Method,
+		req.URL.Path,
+		strconv.FormatInt(ts, 10),
 		rt.serviceName,
 	}, "\n")
 
