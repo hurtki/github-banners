@@ -17,7 +17,7 @@ type Renderer struct {
 	tmpl *template.Template
 }
 
-func NewRender() (*Renderer, error) {
+func NewRenderer() (*Renderer, error) {
 	t, err := template.ParseFS(bannerAssets, "assets/*.svg")
 	if err != nil {
 		return nil, err
