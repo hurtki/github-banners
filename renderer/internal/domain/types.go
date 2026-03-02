@@ -14,8 +14,12 @@ const (
 type BannerInfo struct {
 	Username   string
 	BannerType BannerType
-	URLPath    string
 	Stats      GithubUserStats
+}
+
+type LTBannerInfo struct {
+	URLPath string
+	BannerInfo
 }
 
 type GithubUserStats struct {
