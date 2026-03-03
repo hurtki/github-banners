@@ -3,13 +3,10 @@ services:
   api:
     build: ./api/
     image: api-service
-    container_name: api-service
+    container_name: api
     restart: always
     env_file: ./api/.env
-    ports:
-      - "${API_INTERNAL_SERVER_PORT}:80"
     environment:
-      PORT: "$API_INTERNAL_SERVER_PORT"
       SERVICES_SECRET_KEY: "$SERVICES_SECRET_KEY"
       STORAGE_BASE_URL: "$STORAGE_BASE_URL"
     networks:
@@ -49,8 +46,23 @@ services:
   storage:
     build: ./storage/
     container_name: storage
+    volumes:
+      - banners-storage:/var/www/banners
     networks:
       - banners-net
+  # nginx api gateway
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - banners-storage:/var/www/banners:ro
+      - ./default.svg:/var/www/banners/default.svg:ro
+    ports:
+      - 80:80
+    networks:
+      - banners-net
+    depends_on:
+      - api
   kafka:
     image: apache/kafka:4.2.0
     container_name: kafka
@@ -72,11 +84,7 @@ services:
     networks:
       - kafka-net
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1",
-        ]
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -87,6 +95,8 @@ volumes:
     name: postgres_db_banners_api_ms
   kafka-data:
     name: kafka-data
+  banners-storage:
+    name: banners-storage
 networks:
   api-net:
     driver: bridge

@@ -42,7 +42,7 @@ func Load() *Config {
 	}
 
 	return &Config{
-		Port:            getEnv("PORT", "8080"),
+		Port:            getEnv("PORT", "80"),
 		CORSOrigins:     corsOrigins,
 		GithubTokens:    githubTokens,
 		RateLimitRPS:    getEnvAsInt("RATE_LIMIT_RPS", 10),
