@@ -7,12 +7,12 @@ import (
 
 	"github.com/IBM/sarama"
 	config "github.com/hurtki/github-banners/renderer/internal/config"
-	"github.com/hurtki/github-banners/renderer/internal/handlers"
+	"github.com/hurtki/github-banners/renderer/internal/handlers/events"
 	"github.com/hurtki/github-banners/renderer/internal/logger"
 )
 
 type UpdateBannerHandler interface {
-	Handle(ctx context.Context, msg handlers.Message) error
+	Handle(ctx context.Context, msg events.Message) error
 }
 
 type BannerUpdateCGHandler struct {
@@ -35,6 +35,7 @@ func (h *BannerUpdateCGHandler) Setup(sess sarama.ConsumerGroupSession) error {
 	}
 	return nil
 }
+
 func (h *BannerUpdateCGHandler) Cleanup(sess sarama.ConsumerGroupSession) error {
 	return func() error { sess.Commit(); return nil }()
 }
@@ -84,7 +85,7 @@ func (h *BannerUpdateCGHandler) ConsumeClaim(session sarama.ConsumerGroupSession
 			wg.Add(1)
 			go func(m *sarama.ConsumerMessage) {
 				defer wg.Done()
-				err := h.handler.Handle(session.Context(), handlers.Message{
+				err := h.handler.Handle(session.Context(), events.Message{
 					Key:   m.Key,
 					Value: m.Value,
 				},

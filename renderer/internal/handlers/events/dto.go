@@ -1,8 +1,11 @@
-package handlers
+package events
 
 import (
 	"encoding/json"
 	"time"
+
+	"github.com/hurtki/github-banners/renderer/internal/domain"
+	"github.com/hurtki/github-banners/renderer/internal/domain/render"
 )
 
 type Message struct {
@@ -31,6 +34,23 @@ type BannerUpdateInfo struct {
 	StoragePath string            `json:"storage_path"`
 	FetchedAt   time.Time         `json:"fetched_at"` // RFC3339
 	Stats       BannerUpdateStats `json:"stats"`
+}
+
+func (i BannerUpdateInfo) ToDomainInUpdateBannerIn() render.UpdateBannerIn {
+	return render.UpdateBannerIn{
+		Username:   i.Username,
+		BannerType: i.BannerType,
+		URLPath:    i.StoragePath,
+		Stats: domain.GithubUserStats{
+			TotalRepos:    i.Stats.TotalRepos,
+			OriginalRepos: i.Stats.OriginalRepos,
+			ForkedRepos:   i.Stats.ForkedRepos,
+			TotalStars:    i.Stats.TotalStars,
+			TotalForks:    i.Stats.TotalForks,
+			Languages:     i.Stats.Languages,
+			FetchedAt:     i.FetchedAt,
+		},
+	}
 }
 
 type BannerUpdateStats struct {
