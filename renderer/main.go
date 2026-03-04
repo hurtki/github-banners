@@ -8,10 +8,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/hurtki/github-banners/renderer/internal/config"
 	"github.com/hurtki/github-banners/renderer/internal/domain/render"
 	"github.com/hurtki/github-banners/renderer/internal/domain/templates"
 	"github.com/hurtki/github-banners/renderer/internal/handlers/events"
+	http_handlers "github.com/hurtki/github-banners/renderer/internal/handlers/http"
 	"github.com/hurtki/github-banners/renderer/internal/infrastructure/clients/storage"
 	httpauth "github.com/hurtki/github-banners/renderer/internal/infrastructure/httpauth"
 	"github.com/hurtki/github-banners/renderer/internal/infrastructure/kafka"
@@ -44,6 +46,23 @@ func main() {
 	renderUsecase := render.NewUsecase(renderer, storageClient)
 
 	bannerUpdateHandler := events.NewBannerUpdateHandler(logger, renderUsecase)
+
+	previewHandler := http_handlers.NewPreviewHandler(logger, renderUsecase)
+
+	router := chi.NewRouter()
+	router.Post("/preview", previewHandler.Preview)
+
+	httpServer := &http.Server{
+		Addr:    ":8080",
+		Handler: router,
+	}
+
+	go func() {
+		logger.Info("starting HTTP server", "addr", httpServer.Addr)
+		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logger.Error("http server failed", "err", err)
+		}
+	}()
 
 	cgHandlerCfg := config.NewKafkaCGHandlerConfig()
 
