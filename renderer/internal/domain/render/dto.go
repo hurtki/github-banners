@@ -8,3 +8,9 @@ type UpdateBannerIn struct {
 	URLPath    string
 	Stats      domain.GithubUserStats
 }
+
+type RenderIn struct {
+	Username   string
+	BannerType string
+	Stats      domain.GithubUserStats
+}
