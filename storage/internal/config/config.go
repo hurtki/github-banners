@@ -10,6 +10,7 @@ type Config struct {
 
 	ServiceSecret      string
 	BannersStoragePath string
+	Port               string
 }
 
 func Load() *Config {
@@ -19,6 +20,7 @@ func Load() *Config {
 
 		ServiceSecret:      getEnv("SERVICES_SECRET_KEY", "1234"),
 		BannersStoragePath: getEnv("BANNERS_STORAGE_PATH", "/var/www/banners/"),
+		Port:               "80",
 	}
 }
 

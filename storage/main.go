@@ -7,9 +7,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/hurtki/github-banners/storage/internal/config"
-	"github.com/hurtki/github-banners/storage/internal/domain"
+	"github.com/hurtki/github-banners/storage/internal/domain/usecase"
+	"github.com/hurtki/github-banners/storage/internal/handlers"
 	bannersstorage "github.com/hurtki/github-banners/storage/internal/infrastructure/banners_storage"
+	"github.com/hurtki/github-banners/storage/internal/infrastructure/server"
 	"github.com/hurtki/github-banners/storage/internal/logger"
 )
 
@@ -19,14 +22,21 @@ func main() {
 	logger.Info("started storage service")
 
 	bannersStorage := bannersstorage.NewFileStorage(config.BannersStoragePath, logger, os.WriteFile)
-	err := bannersStorage.Save("alex-test", domain.SvgBannerExtension, []byte("test svg"))
-	logger.Info("saved banner to storage", "err", err)
+	usecase := usecase.NewBannerUsecase(bannersStorage)
+	handler := handlers.NewBannerSaveHandler(logger, usecase)
+
+	router := chi.NewRouter()
+	router.Post("/banners", handler.Save)
+	srv := server.New(config, router, logger)
+	srv.Start()
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	<-quit
 	logger.Info("shutting down, interrupt signal received")
 
-	_, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	srv.Close(ctx)
+
 	defer cancel()
 }
