@@ -8,10 +8,6 @@ import (
 	"github.com/hurtki/github-banners/storage/internal/domain"
 )
 
-const (
-	storageMSBannersStorageUrl = "http://localhost/banners/"
-)
-
 type BannerStorage interface {
 	Save(name string, extension domain.BannerExtension, content []byte) error
 }
@@ -44,5 +40,5 @@ func (u *BannerUsecase) Save(in SaveIn) (SaveOut, error) {
 			return SaveOut{}, fmt.Errorf("%s:%w", "unhandled error from storage", err)
 		}
 	}
-	return SaveOut{BannerUrl: storageMSBannersStorageUrl + in.UrlPath}, nil
+	return SaveOut{BannerUrl: "/banners/" + in.UrlPath}, nil
 }

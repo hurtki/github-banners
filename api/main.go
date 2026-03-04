@@ -77,8 +77,7 @@ func main() {
 	// renderer infra intialization
 	rendererAuthRT := http_auth.NewAuthHTTPRoundTripper("api", http_auth.NewHMACSigner([]byte(cfg.ServicesSecret)), time.Now)
 	rendererHTTPClient := renderer_http.NewRendererHTTPClient(rendererAuthRT)
-	_ = renderer.NewRenderer(rendererHTTPClient, logger, cfg.RendererBaseURL)
-	rendererCl := NewSimplePreviewRenderer()
+	rendererCl := renderer.NewRenderer(rendererHTTPClient, logger, cfg.RendererBaseURL)
 
 	// storage infra initialization
 	storageAuthRT := http_auth.NewAuthHTTPRoundTripper(

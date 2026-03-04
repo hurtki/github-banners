@@ -8,10 +8,6 @@ import (
 	"github.com/hurtki/github-banners/api/internal/repo"
 )
 
-const (
-	storageMSBannersStorageUrl = "http://localhost/banners/"
-)
-
 type LTBannersUsecase struct {
 	bannerRepo             BannerRepo
 	updateRequestPublisher UpdateRequestPublisher
@@ -60,7 +56,7 @@ func (u *LTBannersUsecase) CreateBanner(ctx context.Context, in CreateBannerIn) 
 		}
 	} else {
 		if bnrMeta.Active {
-			return CreateBannerOut{BannerUrlPath: storageMSBannersStorageUrl + bnrMeta.UrlPath}, nil
+			return CreateBannerOut{BannerUrlPath: "/banners/" + bnrMeta.UrlPath}, nil
 		} else {
 			bnrMeta.Active = true
 		}
