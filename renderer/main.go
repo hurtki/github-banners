@@ -11,7 +11,7 @@ import (
 	"github.com/hurtki/github-banners/renderer/internal/config"
 	"github.com/hurtki/github-banners/renderer/internal/domain/render"
 	"github.com/hurtki/github-banners/renderer/internal/domain/templates"
-	"github.com/hurtki/github-banners/renderer/internal/handlers"
+	"github.com/hurtki/github-banners/renderer/internal/handlers/events"
 	"github.com/hurtki/github-banners/renderer/internal/infrastructure/clients/storage"
 	httpauth "github.com/hurtki/github-banners/renderer/internal/infrastructure/httpauth"
 	"github.com/hurtki/github-banners/renderer/internal/infrastructure/kafka"
@@ -42,9 +42,8 @@ func main() {
 	}
 
 	renderUsecase := render.NewUsecase(renderer, storageClient)
-	_ = renderUsecase
 
-	bannerUpdateHandler := handlers.NewBannerUpdateHandler(logger)
+	bannerUpdateHandler := events.NewBannerUpdateHandler(logger, renderUsecase)
 
 	cgHandlerCfg := config.NewKafkaCGHandlerConfig()
 
