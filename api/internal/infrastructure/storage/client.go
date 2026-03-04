@@ -127,7 +127,7 @@ func (c *Client) SaveBanner(ctx context.Context, bannerID string, svg string) (s
 		"source", fn,
 		"banner_id", bannerID,
 		"url", SaveResp.URL,
-		"duration", duration,
+		"duration", duration.String(),
 	)
 	return SaveResp.URL, nil
 }
