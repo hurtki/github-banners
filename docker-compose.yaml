@@ -52,11 +52,9 @@ services:
       - banners-net
   # nginx api gateway
   nginx:
-    image: nginx:latest
+    build: ./nginx/
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - banners-storage:/var/www/banners:ro
-      - ./default.svg:/var/www/banners/default.svg:ro
     ports:
       - 80:80
     networks:

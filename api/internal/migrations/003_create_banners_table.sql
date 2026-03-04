@@ -1,6 +1,6 @@
 -- +goose Up
 CREATE TABLE IF NOT EXISTS banners (
-    github_username TEXT PRIMARY KEY,
+    github_username TEXT NOT NULL,
     banner_type TEXT NOT NULL,
     storage_path TEXT NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT true,
