@@ -76,8 +76,11 @@ func (w *StatsWorker) run() {
 			w.logger.Info("starting refreshing")
 			ctx, cancel := context.WithCancel(w.ctx)
 			go func() {
-				<-ticker.C
-				cancel()
+				select {
+				case <-ticker.C:
+					cancel()
+				case <-ctx.Done():
+				}
 			}()
 
 			resultsCh, errorsCh := w.refreshAll(ctx, w.cfg)
@@ -111,6 +114,7 @@ func (w *StatsWorker) run() {
 				}
 			}
 			w.logger.Info("finshed scheduled update", "success", success, "errors", errors, "duration", time.Since(start).String())
+			cancel()
 		}
 	}
 }

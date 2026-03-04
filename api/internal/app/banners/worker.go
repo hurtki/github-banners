@@ -73,8 +73,14 @@ func (w *BannersWorker) run() {
 			return
 		case <-ticker.C:
 			w.logger.Info("starting refreshing")
-			ctx, cancel := context.WithTimeout(w.ctx, time.Second*5)
-			defer cancel()
+			ctx, cancel := context.WithCancel(w.ctx)
+			go func() {
+				select {
+				case <-ticker.C:
+					cancel()
+				case <-ctx.Done():
+				}
+			}()
 
 			resultsCh, err := w.updateAll(ctx, w.cfg)
 			if err != nil {
@@ -110,6 +116,7 @@ func (w *BannersWorker) run() {
 
 			w.logger.Info("finshed scheduled update", "success", success, "errors", errors, "duration", time.Since(start).String())
 			ticker.Reset(w.interval)
+			cancel()
 		}
 	}
 
