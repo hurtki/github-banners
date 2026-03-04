@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/hurtki/github-banners/renderer/internal/domain"
 	"github.com/hurtki/github-banners/renderer/internal/domain/render"
 	"github.com/hurtki/github-banners/renderer/internal/logger"
 )
@@ -31,33 +30,26 @@ func (h *UpdateBannerHandler) Handle(ctx context.Context, msg Message) error {
 	var event BannerUpdateEvent
 	err := json.Unmarshal(msg.Value, &event)
 	if err != nil {
-		return fmt.Errorf("can't unmarshal msg's value as BannerUpdateEvent, %w", err)
+		return fmt.Errorf("can't unmarshal msg's value as BannerUpdateEvent, %w: %w", err, ErrValidation)
 	}
 
-	h.logger.Debug("Handling new event", "key", msg.Key)
+	h.logger.Debug("Handling new event", "key", string(msg.Key))
 
-	payload := event.Payload
-	updateIn := render.UpdateBannerIn{
-		Username:   payload.Username,
-		BannerType: payload.BannerType,
-		URLPath:    payload.StoragePath,
-		Stats: domain.GithubUserStats{
-			TotalRepos:    payload.Stats.TotalRepos,
-			TotalStars:    payload.Stats.TotalStars,
-			TotalForks:    payload.Stats.TotalForks,
-			ForkedRepos:   payload.Stats.ForkedRepos,
-			OriginalRepos: payload.Stats.OriginalRepos,
-			Languages:     payload.Stats.Languages,
-			FetchedAt:     payload.FetchedAt,
-		},
-	}
+	updateIn := event.Payload.ToDomainInUpdateBannerIn()
 
 	err = h.usecase.ProcessBanner(ctx, updateIn)
 	if err != nil {
-		if errors.Is(err, render.ErrInvalidBannerType) || errors.Is(err, render.ErrInvalidUsername) || errors.Is(err, render.ErrInvalidUrlPath) {
+		switch {
+		case errors.Is(err, render.ErrInvalidBannerType),
+			errors.Is(err, render.ErrInvalidUsername),
+			errors.Is(err, render.ErrInvalidUrlPath):
 			return fmt.Errorf("%w:%w", err, ErrValidation)
+		case errors.Is(err, render.ErrRenderFailure),
+			errors.Is(err, render.ErrStorageFailure):
+			return fmt.Errorf("%w:%w", err, ErrTransient)
+		default:
+			return fmt.Errorf("%w:%w", err, ErrBusiness)
 		}
-		return fmt.Errorf("%w:%w", err, ErrTransient)
 	}
 
 	return nil
