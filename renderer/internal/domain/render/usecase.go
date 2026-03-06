@@ -101,7 +101,7 @@ func (u *Usecase) validateRenderIn(req RenderIn) (domain.BannerInfo, error) {
 	switch req.BannerType {
 	case string(domain.BannerTypeDark):
 		bannerType = domain.BannerTypeDark
-	case string(domain.BannerTypeDefault), "":
+	case string(domain.BannerTypeDefault):
 		bannerType = domain.BannerTypeDefault
 	default:
 		return domain.BannerInfo{}, ErrInvalidBannerType
