@@ -28,7 +28,7 @@ func NewUsecase(r BannerRenderer, s BannerStorage) *Usecase {
 }
 
 func (u *Usecase) ProcessBanner(ctx context.Context, req UpdateBannerIn) error {
-	ltInfo, err := u.validate(req)
+	ltInfo, err := u.validateUpdateBannerIn(req)
 	if err != nil {
 		return err
 	}
@@ -47,7 +47,7 @@ func (u *Usecase) ProcessBanner(ctx context.Context, req UpdateBannerIn) error {
 	return nil
 }
 
-func (u *Usecase) validate(req UpdateBannerIn) (domain.LTBannerInfo, error) {
+func (u *Usecase) validateUpdateBannerIn(req UpdateBannerIn) (domain.LTBannerInfo, error) {
 	if req.Username == "" {
 		return domain.LTBannerInfo{}, ErrInvalidUsername
 	}
@@ -74,5 +74,42 @@ func (u *Usecase) validate(req UpdateBannerIn) (domain.LTBannerInfo, error) {
 			BannerType: bannerType,
 			Stats:      req.Stats,
 		},
+	}, nil
+}
+
+func (u *Usecase) Render(ctx context.Context, req RenderIn) ([]byte, error) {
+	info, err := u.validateRenderIn(req)
+	if err != nil {
+		return nil, err
+	}
+
+	view := layout.BuildView(info)
+	renderedData, err := u.renderer.RenderBanner(view)
+	if err != nil {
+		return nil, err
+	}
+	return renderedData, nil
+}
+
+func (u *Usecase) validateRenderIn(req RenderIn) (domain.BannerInfo, error) {
+	if req.Username == "" {
+		return domain.BannerInfo{}, ErrInvalidUsername
+	}
+
+	bannerType := domain.BannerTypeDefault
+
+	switch req.BannerType {
+	case string(domain.BannerTypeDark):
+		bannerType = domain.BannerTypeDark
+	case string(domain.BannerTypeDefault):
+		bannerType = domain.BannerTypeDefault
+	default:
+		return domain.BannerInfo{}, ErrInvalidBannerType
+	}
+
+	return domain.BannerInfo{
+		Username:   req.Username,
+		BannerType: bannerType,
+		Stats:      req.Stats,
 	}, nil
 }

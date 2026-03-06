@@ -2,8 +2,7 @@ services:
   # api service
   api:
     build: ./api/
-    image: api-service
-    container_name: api
+    container_name: api-service
     restart: always
     env_file: ./api/.env
     environment:
@@ -31,7 +30,6 @@ services:
   renderer:
     build: ./renderer/
     env_file: ./renderer/.env
-    image: renderer
     container_name: renderer
     environment:
       SERVICES_SECRET_KEY: "${SERVICES_SECRET_KEY}"
@@ -53,6 +51,7 @@ services:
   # nginx api gateway
   nginx:
     build: ./nginx/
+    container_name: nginx
     volumes:
       - banners-storage:/var/www/banners:ro
     ports:

@@ -54,10 +54,10 @@ func (i BannerUpdateInfo) ToDomainInUpdateBannerIn() render.UpdateBannerIn {
 }
 
 type BannerUpdateStats struct {
-	TotalRepos    int            `json:"totalRepos"`
-	OriginalRepos int            `json:"originalRepos"`
-	ForkedRepos   int            `json:"forkedRepos"`
-	TotalStars    int            `json:"totalStars"`
-	TotalForks    int            `json:"totalForks"`
+	TotalRepos    int            `json:"total_repos"`
+	OriginalRepos int            `json:"original_repos"`
+	ForkedRepos   int            `json:"forked_repos"`
+	TotalStars    int            `json:"total_stars"`
+	TotalForks    int            `json:"total_forks"`
 	Languages     map[string]int `json:"languages"`
 }
