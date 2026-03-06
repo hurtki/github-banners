@@ -34,7 +34,7 @@ func (h *PreviewHandler) Preview(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer r.Body.Close()
-	h.logger.Info("Received preview payload", "username", req.Username, "banner_type", req.BannerType)
+	h.logger.Debug("Received preview payload", "username", req.Username, "banner_type", req.BannerType)
 
 	renderIn := req.ToDomainRenderIn()
 
