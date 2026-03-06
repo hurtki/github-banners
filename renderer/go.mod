@@ -2,7 +2,10 @@ module github.com/hurtki/github-banners/renderer
 
 go 1.25.5
 
-require github.com/IBM/sarama v1.46.3
+require (
+	github.com/IBM/sarama v1.46.3
+	github.com/go-chi/chi/v5 v5.2.5
+)
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
