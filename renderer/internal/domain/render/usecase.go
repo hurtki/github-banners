@@ -28,7 +28,7 @@ func NewUsecase(r BannerRenderer, s BannerStorage) *Usecase {
 }
 
 func (u *Usecase) ProcessBanner(ctx context.Context, req UpdateBannerIn) error {
-	ltInfo, err := u.validate(req)
+	ltInfo, err := u.validateUpdateBannerIn(req)
 	if err != nil {
 		return err
 	}
@@ -47,7 +47,7 @@ func (u *Usecase) ProcessBanner(ctx context.Context, req UpdateBannerIn) error {
 	return nil
 }
 
-func (u *Usecase) validate(req UpdateBannerIn) (domain.LTBannerInfo, error) {
+func (u *Usecase) validateUpdateBannerIn(req UpdateBannerIn) (domain.LTBannerInfo, error) {
 	if req.Username == "" {
 		return domain.LTBannerInfo{}, ErrInvalidUsername
 	}
