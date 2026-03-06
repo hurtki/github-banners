@@ -1,16 +1,17 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 
-	"github.com/hurtki/github-banners/storage/internal/domain/usecase"
+	"github.com/hurtki/github-banners/storage/internal/domain/banner"
 	"github.com/hurtki/github-banners/storage/internal/logger"
 )
 
 type BannerSaveUsecase interface {
-	Save(in usecase.SaveIn) (usecase.SaveOut, error)
+	Save(ctx context.Context, in banner.SaveIn) (banner.SaveOut, error)
 }
 
 type BannerSaveHandler struct {
@@ -26,6 +27,7 @@ func NewBannerSaveHandler(logger logger.Logger, usecase BannerSaveUsecase) *Bann
 }
 
 func (h *BannerSaveHandler) Save(rw http.ResponseWriter, req *http.Request) {
+	fn := "internal.handlers.BannerSaveHandler.Save"
 	reqDto := SaveRequest{}
 	err := json.NewDecoder(req.Body).Decode(&reqDto)
 	if err != nil {
@@ -38,18 +40,21 @@ func (h *BannerSaveHandler) Save(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	out, err := h.usecase.Save(in)
+	out, err := h.usecase.Save(req.Context(), in)
 	if err != nil {
 		switch {
-		case errors.Is(err, usecase.ErrInvalidUrlPath):
+		case errors.Is(err, banner.ErrInvalidUrlPath):
 			h.error(rw, http.StatusBadRequest, "invalid url path")
-		case errors.Is(err, usecase.ErrInvalidBannerFormat):
+		case errors.Is(err, banner.ErrInvalidBannerFormat):
 			h.error(rw, http.StatusBadRequest, "invalid banner format")
-		case errors.Is(err, usecase.ErrCantSaveBanner):
+		case errors.Is(err, banner.ErrCantSaveBanner):
 			h.logger.Warn("can't save banner", "err", err)
 			h.error(rw, http.StatusInternalServerError, "can't save banner")
-			return
+		default:
+			h.logger.Warn("unhandled error from usecase", "source", fn, "err", err)
+			h.error(rw, http.StatusInternalServerError, "can't save banner")
 		}
+		return
 	}
 	resDto := SaveResponse{URL: out.BannerUrl}
 	err = json.NewEncoder(rw).Encode(resDto)

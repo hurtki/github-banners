@@ -1,4 +1,4 @@
-package usecase
+package banner
 
 type SaveIn struct {
 	UrlPath    string

@@ -9,7 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/hurtki/github-banners/storage/internal/config"
-	"github.com/hurtki/github-banners/storage/internal/domain/usecase"
+	"github.com/hurtki/github-banners/storage/internal/domain/banner"
 	"github.com/hurtki/github-banners/storage/internal/handlers"
 	bannersstorage "github.com/hurtki/github-banners/storage/internal/infrastructure/banners_storage"
 	"github.com/hurtki/github-banners/storage/internal/infrastructure/server"
@@ -22,7 +22,7 @@ func main() {
 	logger.Info("started storage service")
 
 	bannersStorage := bannersstorage.NewFileStorage(config.BannersStoragePath, logger, os.WriteFile)
-	usecase := usecase.NewBannerUsecase(bannersStorage)
+	usecase := banner.NewBannerUsecase(bannersStorage)
 	handler := handlers.NewBannerSaveHandler(logger, usecase)
 
 	router := chi.NewRouter()

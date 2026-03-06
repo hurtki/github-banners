@@ -2,7 +2,7 @@ services:
   # api service
   api:
     build: ./api/
-    container_name: api-service
+    container_name: api
     restart: always
     env_file: ./api/.env
     environment:

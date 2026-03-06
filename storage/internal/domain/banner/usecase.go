@@ -1,6 +1,7 @@
-package usecase
+package banner 
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/url"
@@ -9,7 +10,7 @@ import (
 )
 
 type BannerStorage interface {
-	Save(name string, extension domain.BannerExtension, content []byte) error
+	Save(ctx context.Context, name string, extension domain.BannerExtension, content []byte) error
 }
 
 type BannerUsecase struct {
@@ -22,7 +23,7 @@ func NewBannerUsecase(storage BannerStorage) *BannerUsecase {
 	}
 }
 
-func (u *BannerUsecase) Save(in SaveIn) (SaveOut, error) {
+func (u *BannerUsecase) Save(ctx context.Context, in SaveIn) (SaveOut, error) {
 	if in.UrlPath == "" || (url.PathEscape(in.UrlPath) != in.UrlPath) {
 		return SaveOut{}, ErrInvalidUrlPath
 	}
@@ -31,14 +32,16 @@ func (u *BannerUsecase) Save(in SaveIn) (SaveOut, error) {
 	if !ok {
 		return SaveOut{}, ErrInvalidBannerFormat
 	}
-	err := u.storage.Save(in.UrlPath, ext, in.BannerData)
+	err := u.storage.Save(ctx, in.UrlPath, ext, in.BannerData)
 	if err != nil {
 		switch {
 		case errors.Is(err, domain.ErrUnavailable):
 			return SaveOut{}, ErrCantSaveBanner
 		default:
-			return SaveOut{}, fmt.Errorf("%s:%w", "unhandled error from storage", err)
+			return SaveOut{}, fmt.Errorf("%s:%w:%w", "unhandled error from storage", err, ErrCantSaveBanner)
 		}
 	}
+
+	// returning relative path
 	return SaveOut{BannerUrl: "/banners/" + in.UrlPath}, nil
 }

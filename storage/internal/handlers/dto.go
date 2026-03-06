@@ -3,7 +3,7 @@ package handlers
 import (
 	"encoding/base64"
 
-	"github.com/hurtki/github-banners/storage/internal/domain/usecase"
+	"github.com/hurtki/github-banners/storage/internal/domain/banner"
 )
 
 type SaveRequest struct {
@@ -12,13 +12,13 @@ type SaveRequest struct {
 	BannerFormat  string `json:"banner_format"`
 }
 
-func (r SaveRequest) ToDomainSaveBannerIn() (usecase.SaveIn, error) {
+func (r SaveRequest) ToDomainSaveBannerIn() (banner.SaveIn, error) {
 	decoded, err := base64.StdEncoding.DecodeString(r.B64BannerData)
 	if err != nil {
-		return usecase.SaveIn{}, err
+		return banner.SaveIn{}, err
 	}
 
-	return usecase.SaveIn{
+	return banner.SaveIn{
 		UrlPath:    r.UrlPath,
 		BannerData: decoded,
 		Format:     r.BannerFormat,
