@@ -53,7 +53,7 @@ func main() {
 	router.Post("/preview", previewHandler.Preview)
 
 	httpServer := &http.Server{
-		Addr:    ":8080",
+		Addr:    ":80",
 		Handler: router,
 	}
 
@@ -83,7 +83,9 @@ func main() {
 
 	quitCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-
+	if err := httpServer.Shutdown(quitCtx); err != nil {
+		logger.Error("http server shutdown failed", "err", err)
+	}
 	// close consumer group
 	cg.Close(quitCtx)
 }
