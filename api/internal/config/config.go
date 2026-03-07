@@ -42,7 +42,7 @@ func Load() *Config {
 	}
 
 	return &Config{
-		Port:            getEnv("PORT", "8080"),
+		Port:            getEnv("PORT", "80"),
 		CORSOrigins:     corsOrigins,
 		GithubTokens:    githubTokens,
 		RateLimitRPS:    getEnvAsInt("RATE_LIMIT_RPS", 10),
@@ -51,7 +51,7 @@ func Load() *Config {
 		LogLevel:        getEnv("LOG_LEVEL", "info"),
 		LogFormat:       getEnv("LOG_FORMAT", "json"),
 		ServicesSecret:  getEnv("SERVICES_SECRET_KEY", "1234"),
-		StorageBaseURL:  getEnv("STORAGE_BASE_URL", "http://localhost:8081"),
+		StorageBaseURL:  getEnv("STORAGE_BASE_URL", "http://storage/"),
 		RendererBaseURL: getEnv("RENDERER_BASE_URL", "https://renderer/"),
 	}
 }

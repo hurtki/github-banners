@@ -6,9 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/hurtki/github-banners/api/internal/config"
-	log "github.com/hurtki/github-banners/api/internal/logger"
-	"github.com/rs/cors"
+	"github.com/hurtki/github-banners/storage/internal/config"
+	log "github.com/hurtki/github-banners/storage/internal/logger"
 )
 
 type Server struct {
@@ -17,13 +16,6 @@ type Server struct {
 }
 
 func New(cfg *config.Config, handler http.Handler, logger log.Logger) *Server {
-	handler = cors.New(cors.Options{
-		AllowedOrigins:   cfg.CORSOrigins,
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"*"},
-		AllowCredentials: false,
-	}).Handler(handler)
-
 	return &Server{
 		httpServer: &http.Server{
 			Addr:         fmt.Sprintf(":%s", cfg.Port),

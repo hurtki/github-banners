@@ -127,7 +127,7 @@ func (r *PostgresRepo) GetBanner(ctx context.Context, githubUsername string, ban
 		if errors.Is(err, sql.ErrNoRows) {
 			return domain.LTBannerMetadata{}, repoerr.ErrNothingFound
 		}
-		r.logger.Error("unexpected error when checking banner active state", "source", fn, "err", err)
+		r.logger.Error("unexpected error when getting banner", "source", fn, "err", err)
 		return domain.LTBannerMetadata{}, repoerr.ErrRepoInternal{Note: err.Error()}
 	}
 	return meta, nil

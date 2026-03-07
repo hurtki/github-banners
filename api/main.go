@@ -119,8 +119,8 @@ func main() {
 	bannersHandler := handlers.NewBannersHandler(logger, previewUsecase, ltBannersUsecase)
 
 	// http handlers
-	router.Get("/banners/preview/", bannersHandler.Preview)
-	router.Post("/banners/", bannersHandler.Create)
+	router.Get("/banners/preview", bannersHandler.Preview)
+	router.Post("/banners", bannersHandler.Create)
 
 	// workers startup
 	ltBannersUpdateWorker := banners_worker.NewBannersWorker(logger, ltBannersUsecase.UpdateAll, time.Hour, longterm.UpdateAllConfig{Concurrency: 20})

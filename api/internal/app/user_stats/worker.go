@@ -73,10 +73,19 @@ func (w *StatsWorker) run() {
 		case <-w.ctx.Done():
 			return
 		case <-ticker.C:
-			ctx, cancel := context.WithTimeout(w.ctx, time.Second*5)
-			defer cancel()
+			w.logger.Info("starting refreshing")
+			ctx, cancel := context.WithCancel(w.ctx)
+			go func() {
+				select {
+				case <-ticker.C:
+					cancel()
+				case <-ctx.Done():
+				}
+			}()
 
 			resultsCh, errorsCh := w.refreshAll(ctx, w.cfg)
+
+			start := time.Now()
 			success := 0
 			errors := 0
 
@@ -104,7 +113,8 @@ func (w *StatsWorker) run() {
 					}
 				}
 			}
-			w.logger.Info("finshed scheduled update", "success", success, "errors", errors)
+			w.logger.Info("finshed scheduled update", "success", success, "errors", errors, "duration", time.Since(start).String())
+			cancel()
 		}
 	}
 }

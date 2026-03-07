@@ -3,13 +3,10 @@ package longterm
 import (
 	"context"
 	"errors"
+	"path"
 
 	"github.com/hurtki/github-banners/api/internal/domain"
 	"github.com/hurtki/github-banners/api/internal/repo"
-)
-
-const (
-	storageMSBannersStorageUrl = "http://localhost/banners/"
 )
 
 type LTBannersUsecase struct {
@@ -51,7 +48,7 @@ func (u *LTBannersUsecase) CreateBanner(ctx context.Context, in CreateBannerIn) 
 			bnrMeta.BannerType = bt
 			bnrMeta.UrlPath = generateUrlPath(bnrMeta.Username, bnrMeta.BannerType)
 			bnrMeta.Active = true
-		case errors.As(err, errRepoInternal):
+		case errors.As(err, &errRepoInternal):
 			// if db internal error occured, we won't go to next services
 			// because, then we could get same thing when saving a new banner and all the work will be useless
 			return CreateBannerOut{}, ErrCantCreateBanner
@@ -60,7 +57,7 @@ func (u *LTBannersUsecase) CreateBanner(ctx context.Context, in CreateBannerIn) 
 		}
 	} else {
 		if bnrMeta.Active {
-			return CreateBannerOut{BannerUrlPath: storageMSBannersStorageUrl + bnrMeta.UrlPath}, nil
+			return CreateBannerOut{BannerUrlPath: path.Join("/banners/", bnrMeta.UrlPath)}, nil
 		} else {
 			bnrMeta.Active = true
 		}

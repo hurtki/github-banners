@@ -12,4 +12,6 @@ RUN go build -o entry
 
 RUN chmod u+x entry
 
+EXPOSE 80
+
 CMD ["./entry"]

@@ -2,12 +2,12 @@ services:
   # api service
   api:
     build: ./api/
-    image: api-service
-    container_name: api-service
+    container_name: api
     restart: always
     env_file: ./api/.env
-    ports:
-      - "8080:8080"
+    environment:
+      SERVICES_SECRET_KEY: "$SERVICES_SECRET_KEY"
+      STORAGE_BASE_URL: "$STORAGE_BASE_URL"
     networks:
       - banners-net
       - api-net
@@ -30,11 +30,10 @@ services:
   renderer:
     build: ./renderer/
     env_file: ./renderer/.env
-    image: renderer
     container_name: renderer
-    # environment:
-    # SERVICES_SECRET_KEY: "${SERVICES_SECRET_KEY}"
-    # STORAGE_BASE_URL: "$STORAGE_BASE_URL"
+    environment:
+      SERVICES_SECRET_KEY: "${SERVICES_SECRET_KEY}"
+      STORAGE_BASE_URL: "$STORAGE_BASE_URL"
     networks:
       - banners-net
       - kafka-net
@@ -45,8 +44,22 @@ services:
   storage:
     build: ./storage/
     container_name: storage
+    volumes:
+      - banners-storage:/var/www/banners
     networks:
       - banners-net
+  # nginx api gateway
+  nginx:
+    build: ./nginx/
+    container_name: nginx
+    volumes:
+      - banners-storage:/var/www/banners:ro
+    ports:
+      - 80:80
+    networks:
+      - banners-net
+    depends_on:
+      - api
   kafka:
     image: apache/kafka:4.2.0
     container_name: kafka
@@ -68,11 +81,7 @@ services:
     networks:
       - kafka-net
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1",
-        ]
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -83,6 +92,8 @@ volumes:
     name: postgres_db_banners_api_ms
   kafka-data:
     name: kafka-data
+  banners-storage:
+    name: banners-storage
 networks:
   api-net:
     driver: bridge
