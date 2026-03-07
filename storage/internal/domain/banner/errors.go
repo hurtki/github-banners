@@ -1,4 +1,4 @@
-package banner 
+package banner
 
 import (
 	"errors"

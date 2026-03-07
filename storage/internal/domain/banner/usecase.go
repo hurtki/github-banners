@@ -1,10 +1,11 @@
-package banner 
+package banner
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"net/url"
+	"path"
 
 	"github.com/hurtki/github-banners/storage/internal/domain"
 )
@@ -43,5 +44,5 @@ func (u *BannerUsecase) Save(ctx context.Context, in SaveIn) (SaveOut, error) {
 	}
 
 	// returning relative path
-	return SaveOut{BannerUrl: "/banners/" + in.UrlPath}, nil
+	return SaveOut{BannerUrl: path.Join("/banners/", in.UrlPath)}, nil
 }

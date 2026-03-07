@@ -3,6 +3,7 @@ package longterm
 import (
 	"context"
 	"errors"
+	"path"
 
 	"github.com/hurtki/github-banners/api/internal/domain"
 	"github.com/hurtki/github-banners/api/internal/repo"
@@ -56,7 +57,7 @@ func (u *LTBannersUsecase) CreateBanner(ctx context.Context, in CreateBannerIn) 
 		}
 	} else {
 		if bnrMeta.Active {
-			return CreateBannerOut{BannerUrlPath: "/banners/" + bnrMeta.UrlPath}, nil
+			return CreateBannerOut{BannerUrlPath: path.Join("/banners/", bnrMeta.UrlPath)}, nil
 		} else {
 			bnrMeta.Active = true
 		}
