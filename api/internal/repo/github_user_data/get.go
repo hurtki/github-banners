@@ -18,13 +18,13 @@ func (r *GithubDataPsgrRepo) GetUserData(ctx context.Context, username string) (
 			Note: err.Error(),
 		}
 	}
-	commited := false
+	committed := false
 	defer func() {
 		if p := recover(); p != nil {
 			_ = tx.Rollback()
 			panic(p)
 		}
-		if !commited {
+		if !committed {
 			rbErr := tx.Rollback()
 			if rbErr != nil {
 				r.logger.Error("error occured, when rolling back transaction", "err", rbErr, "source", fn)
@@ -42,7 +42,7 @@ func (r *GithubDataPsgrRepo) GetUserData(ctx context.Context, username string) (
 	err = row.Scan(&data.Username, &data.Name, &data.Company, &data.Location, &data.Bio, &data.PublicRepos, &data.Followers, &data.Following, &data.FetchedAt)
 
 	if err != nil {
-		return domain.GithubUserData{}, toRepoError(err)
+		return domain.GithubUserData{}, r.handleError(err, fn+".scanIntoGithubUserData")
 	}
 
 	rows, err := tx.QueryContext(ctx, `
@@ -51,7 +51,7 @@ func (r *GithubDataPsgrRepo) GetUserData(ctx context.Context, username string) (
 	`, username)
 
 	if err != nil {
-		return domain.GithubUserData{}, toRepoError(err)
+		return domain.GithubUserData{}, r.handleError(err, fn+".selectRepositoriesQuery")
 	}
 
 	githubRepos := []domain.GithubRepository{}
@@ -60,8 +60,7 @@ func (r *GithubDataPsgrRepo) GetUserData(ctx context.Context, username string) (
 		githubRepo := domain.GithubRepository{}
 		err = rows.Scan(&githubRepo.ID, &githubRepo.OwnerUsername, &githubRepo.PushedAt, &githubRepo.UpdatedAt, &githubRepo.Language, &githubRepo.StarsCount, &githubRepo.Fork, &githubRepo.ForksCount)
 		if err != nil {
-			r.logger.Error("unexpected error from scan", "source", fn, "err", err)
-			return domain.GithubUserData{}, toRepoError(err)
+			return domain.GithubUserData{}, r.handleError(err, fn+".scanRepositoryRow")
 		}
 		githubRepos = append(githubRepos, githubRepo)
 	}
@@ -71,14 +70,14 @@ func (r *GithubDataPsgrRepo) GetUserData(ctx context.Context, username string) (
 	err = rows.Err()
 	if err != nil {
 		r.logger.Error("unexpected error, after iterating rows", "source", fn, "err", err)
-		return domain.GithubUserData{}, toRepoError(err)
+		return domain.GithubUserData{}, r.handleError(err, fn+".afterIteratingRowsError")
 	}
 
 	data.Repositories = githubRepos
 
 	if err = tx.Commit(); err != nil {
-		return domain.GithubUserData{}, toRepoError(err)
+		return domain.GithubUserData{}, r.handleError(err, fn+".commit")
 	}
-	commited = true
+	committed = true
 	return data, nil
 }

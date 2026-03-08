@@ -19,13 +19,14 @@ func (r *GithubDataPsgrRepo) SaveUserData(ctx context.Context, userData domain.G
 			Note: err.Error(),
 		}
 	}
-	commited := false
+
+	committed := false
 	defer func() {
 		if p := recover(); p != nil {
 			_ = tx.Rollback()
 			panic(p)
 		}
-		if !commited {
+		if !committed {
 			rbErr := tx.Rollback()
 			if rbErr != nil {
 				r.logger.Error("error occured, when rolling back transaction", "err", rbErr, "source", fn)
@@ -47,28 +48,39 @@ func (r *GithubDataPsgrRepo) SaveUserData(ctx context.Context, userData domain.G
 		fetched_at = EXCLUDED.fetched_at;
 	`, userData.Username, userData.Name, userData.Company, userData.Location, userData.Bio, userData.PublicRepos, userData.Followers, userData.Following, userData.FetchedAt)
 	if err != nil {
-		return toRepoError(err)
+		return r.handleError(err, fn+".insertUser")
 	}
 
 	// if a new data says that there is not repositories, then delete all existing ones
 	if len(userData.Repositories) == 0 {
-		_, err := tx.Exec(`
+		_, err := tx.ExecContext(ctx, `
 		delete from repositories
 		where owner_username = $1;
 		`, userData.Username)
-		return toRepoError(err)
+
+		if err != nil {
+			return r.handleError(err, fn+".execDeleteAllRepositoriesFromUser")
+		}
+
+		err = tx.Commit()
+
+		if err != nil {
+			return r.handleError(err, fn+".commitAfterZeroRepositories")
+		}
+		committed = true
+		return nil
 	}
 
 	// deduplicate
 	seen := make(map[int64]struct{}, len(userData.Repositories))
 	repos := make([]domain.GithubRepository, 0, len(userData.Repositories))
 
-	for _, r := range userData.Repositories {
-		if _, ok := seen[r.ID]; ok {
+	for _, repo := range userData.Repositories {
+		if _, ok := seen[repo.ID]; ok {
 			continue
 		}
-		seen[r.ID] = struct{}{}
-		repos = append(repos, r)
+		seen[repo.ID] = struct{}{}
+		repos = append(repos, repo)
 	}
 
 	userData.Repositories = repos
@@ -80,7 +92,7 @@ func (r *GithubDataPsgrRepo) SaveUserData(ctx context.Context, userData domain.G
 
 		chunk := userData.Repositories[i:end]
 		if err := r.upsertRepoBatch(ctx, tx, chunk); err != nil {
-			return toRepoError(err)
+			return r.handleError(err, fn+".upsertRepoBatch")
 		}
 	}
 
@@ -112,12 +124,12 @@ func (r *GithubDataPsgrRepo) SaveUserData(ctx context.Context, userData domain.G
 	`, strings.Join(deletePosParams, ", "))
 
 	if _, err = tx.ExecContext(ctx, deleteQuery, deleteArgs...); err != nil {
-		return toRepoError(err)
+		return r.handleError(err, fn+".deleteNotUsersRepositories")
 	}
 
 	if err = tx.Commit(); err != nil {
-		return toRepoError(err)
+		return r.handleError(err, fn+".finalCommit")
 	}
-	commited = true
+	committed = true
 	return nil
 }
