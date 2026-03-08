@@ -51,7 +51,7 @@ func (r *GithubDataPsgrRepo) SaveUserData(ctx context.Context, userData domain.G
 		return r.handleError(err, fn+".insertUser")
 	}
 
-	// if a new data says that there is not repositories, then delete all existing ones
+	// if a new data says that there is no repositories, then delete all existing ones
 	if len(userData.Repositories) == 0 {
 		_, err := tx.ExecContext(ctx, `
 		delete from repositories
@@ -85,7 +85,7 @@ func (r *GithubDataPsgrRepo) SaveUserData(ctx context.Context, userData domain.G
 
 	userData.Repositories = repos
 
-	// Batch/Chunk Repository Upsert (Postgres Limit: 65535 parameters)
+	// Batch/Chunk Repository Upsert (Postgres positional parameters limit: 65535 parameters)
 	batchSize := 500
 	for i := 0; i < len(userData.Repositories); i += batchSize {
 		end := min(i+batchSize, len(userData.Repositories))

@@ -20,18 +20,23 @@ func (m LoggerMock) Error(a string, b ...any)    {}
 func (m LoggerMock) With(a ...any) logger.Logger { return m }
 
 // helper for testing to create sql mock, create repoistory with it
-func getMockAndRepo() (sqlmock.Sqlmock, *GithubDataPsgrRepo) {
+// checks sqlmock expectations
+func getMockAndRepo(t *testing.T) (sqlmock.Sqlmock, *GithubDataPsgrRepo) {
 	db, mock, _ := sqlmock.New(
 		sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual),
 	)
 	logger := LoggerMock{}
+
+	t.Cleanup(func() {
+		require.NoError(t, mock.ExpectationsWereMet())
+	})
 
 	repo := NewGithubDataPsgrRepo(db, logger)
 	return mock, repo
 }
 
 func TestSaveUserDataSucess(t *testing.T) {
-	mock, repo := getMockAndRepo()
+	mock, repo := getMockAndRepo(t)
 	githubRepo1 := domain.GithubRepository{ID: 123, OwnerUsername: "alex"}
 	githubRepo2 := domain.GithubRepository{ID: 45, OwnerUsername: "alex"}
 	userData := domain.GithubUserData{
@@ -86,7 +91,7 @@ func TestSaveUserDataSucess(t *testing.T) {
 }
 
 func TestSaveUserDataSucessNoRepos(t *testing.T) {
-	mock, repo := getMockAndRepo()
+	mock, repo := getMockAndRepo(t)
 	userData := domain.GithubUserData{
 		Username:     "alex",
 		FetchedAt:    time.Now(),
@@ -121,7 +126,7 @@ func TestSaveUserDataSucessNoRepos(t *testing.T) {
 }
 
 func TestGetAllUsernamesSuccess(t *testing.T) {
-	mock, repo := getMockAndRepo()
+	mock, repo := getMockAndRepo(t)
 	usernames := []string{"alex", "hurtki", "forge", "higor54"}
 
 	usernameRows := sqlmock.NewRows([]string{"username"})
@@ -139,7 +144,7 @@ func TestGetAllUsernamesSuccess(t *testing.T) {
 }
 
 func TestGetAllUsernamesNoUsernames(t *testing.T) {
-	mock, repo := getMockAndRepo()
+	mock, repo := getMockAndRepo(t)
 
 	mock.ExpectQuery(`
 	select username from users;
@@ -152,7 +157,7 @@ func TestGetAllUsernamesNoUsernames(t *testing.T) {
 }
 
 func TestGetUserDataSuccess(t *testing.T) {
-	mock, repo := getMockAndRepo()
+	mock, repo := getMockAndRepo(t)
 
 	userData := domain.GithubUserData{Username: "Olivia"}
 	repo1 := domain.GithubRepository{ID: 123, OwnerUsername: userData.Username}
