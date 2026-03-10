@@ -6,7 +6,7 @@ func (r *GithubDataPsgrRepo) GetAllUsernames(ctx context.Context) ([]string, err
 	fn := "internal.repo.github_user_data.GithubDataPsgrRepo.GetAllUsernames"
 
 	rows, err := r.db.QueryContext(ctx, `
-	select username from users;
+	select username from github_data.users;
 	`)
 
 	if err != nil {
