@@ -35,9 +35,10 @@ func (r *GithubDataPsgrRepo) SaveUserData(ctx context.Context, userData domain.G
 	}()
 
 	_, err = tx.ExecContext(ctx, `
-	insert into users (username, name, company, location, bio, public_repos_count, followers_count, following_count, fetched_at)
-	values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-	on conflict (username) do update set
+	insert into github_data.users (username, username_normalized, name, company, location, bio, public_repos_count, followers_count, following_count, fetched_at)
+	values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+	on conflict (username_normalized) do update set
+		username = EXCLUDED.username,
 		name = EXCLUDED.name,
 		company = EXCLUDED.company,
 		location = EXCLUDED.location,
@@ -46,7 +47,7 @@ func (r *GithubDataPsgrRepo) SaveUserData(ctx context.Context, userData domain.G
 		followers_count = EXCLUDED.followers_count,
 		following_count = EXCLUDED.following_count,
 		fetched_at = EXCLUDED.fetched_at;
-	`, userData.Username, userData.Name, userData.Company, userData.Location, userData.Bio, userData.PublicRepos, userData.Followers, userData.Following, userData.FetchedAt)
+	`, userData.Username, strings.ToLower(userData.Username), userData.Name, userData.Company, userData.Location, userData.Bio, userData.PublicRepos, userData.Followers, userData.Following, userData.FetchedAt)
 	if err != nil {
 		return r.handleError(err, fn+".insertUser")
 	}
@@ -54,8 +55,8 @@ func (r *GithubDataPsgrRepo) SaveUserData(ctx context.Context, userData domain.G
 	// if a new data says that there is no repositories, then delete all existing ones
 	if len(userData.Repositories) == 0 {
 		_, err := tx.ExecContext(ctx, `
-		delete from repositories
-		where owner_username = $1;
+		delete from github_data.repositories
+		where owner_username_normalized = lower($1);
 		`, userData.Username)
 
 		if err != nil {
@@ -114,8 +115,8 @@ func (r *GithubDataPsgrRepo) SaveUserData(ctx context.Context, userData domain.G
 	}
 
 	deleteQuery := fmt.Sprintf(`
-		delete from repositories r
-		where r.owner_username = $1
+		delete from github_data.repositories r
+		where r.owner_username_normalized = lower($1)
 		and not exists (
 			select 1
 			from (values %s) as v(github_id)

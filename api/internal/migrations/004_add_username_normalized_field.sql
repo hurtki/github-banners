@@ -44,7 +44,7 @@ username text not null
 
 -- normalize repositories table
 alter table repositories
-add column owner_username_normalized;
+add column owner_username_normalized text;
 
 update repositories
 set owner_username_normalized = lower(owner_username);
@@ -58,10 +58,10 @@ drop column owner_username;
 alter table repositories
 alter column owner_username_normalized set not null;
 
-alter table users
+alter table repositories
 add constraint fk_repository_owner
     foreign key (owner_username_normalized)
-    references users(username) on delete cascade;
+    references users(username_normalized) on delete cascade;
 
 CREATE INDEX idx_repositories_owner_username ON repositories(owner_username_normalized);
 
