@@ -67,10 +67,10 @@ func main() {
 		logger.Error("failed to run migrations", "err", err.Error())
 		os.Exit(1)
 	}
-	repo := github_data_repo.NewGithubDataPsgrRepo(db, logger)
+	githubDataRepo := github_data_repo.NewGithubDataPsgrRepo(db, logger)
 
 	// Create stats service (domain service with cache)
-	statsService := userstats.NewUserStatsService(repo, githubFetcher, statsCache)
+	statsService := userstats.NewUserStatsService(githubDataRepo, githubFetcher, statsCache)
 
 	router := chi.NewRouter()
 

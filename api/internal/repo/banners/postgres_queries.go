@@ -12,7 +12,7 @@ import (
 
 func (r *PostgresRepo) GetActiveBanners(ctx context.Context) ([]domain.LTBannerMetadata, error) {
 	fn := "internal.repo.banners.PostgresRepo.GetActiveBanners"
-	const q = `select github_username, banner_type, storage_path from banners where is_active = true`
+	const q = `select github_username_normalized, banner_type, storage_path from banners where is_active = true`
 	rows, err := r.db.QueryContext(ctx, q)
 	if err != nil {
 		r.logger.Error("unexpected error when querying banners", "source", fn, "err", err)
@@ -67,9 +67,9 @@ func (r *PostgresRepo) SaveBanner(ctx context.Context, b domain.LTBannerMetadata
 	}
 
 	const q = `
-	insert into banners (github_username, banner_type, storage_path, is_active)
-	values ($1, $2, $3, $4)
-	on conflict (github_username, banner_type) do update set
+	insert into banners (github_username_normalized, banner_type, storage_path, is_active)
+	values (lower($1), $2, $3, $4)
+	on conflict (github_username_normalized, banner_type) do update set
 		is_active = EXCLUDED.is_active,
 		storage_path = EXCLUDED.storage_path;
 	`
@@ -95,7 +95,7 @@ func (r *PostgresRepo) DeactivateBanner(ctx context.Context, githubUsername stri
 	const q = `
 	update banners
 	set is_active = false
-	where github_username = $1 and banner_type = $2 and is_active = true`
+	where github_username_normalized = lower($1) and banner_type = $2 and is_active = true`
 
 	res, err := r.db.ExecContext(ctx, q, githubUsername, domain.BannerTypesBackward[bannerType])
 	if err != nil {
@@ -119,7 +119,7 @@ func (r *PostgresRepo) GetBanner(ctx context.Context, githubUsername string, ban
 	fn := "internal.repo.banners.PostgresRepo.GetBanner"
 	const q = `
 	select storage_path, is_active from banners
-	where github_username = $1 and banner_type = $2;`
+	where github_username_normalized = lower($1) and banner_type = $2;`
 	meta := domain.LTBannerMetadata{Username: githubUsername, BannerType: bannerType}
 
 	err := r.db.QueryRowContext(ctx, q, githubUsername, domain.BannerTypesBackward[bannerType]).Scan(&meta.UrlPath, &meta.Active)
