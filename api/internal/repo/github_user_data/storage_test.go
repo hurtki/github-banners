@@ -50,7 +50,7 @@ func TestSaveUserDataSucess(t *testing.T) {
 
 	mock.ExpectExec(`
 	insert into github_data.users (username, username_normalized, name, company, location, bio, public_repos_count, followers_count, following_count, fetched_at)
-	values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+	values ($1, lower($2), $3, $4, $5, $6, $7, $8, $9, $10)
 	on conflict (username_normalized) do update set
 		username = EXCLUDED.username,
 		name = EXCLUDED.name,
@@ -61,11 +61,11 @@ func TestSaveUserDataSucess(t *testing.T) {
 		followers_count = EXCLUDED.followers_count,
 		following_count = EXCLUDED.following_count,
 		fetched_at = EXCLUDED.fetched_at;
-	`).WithArgs(userData.Username, strings.ToLower(userData.Username), userData.Name, userData.Company, userData.Location, userData.Bio, userData.PublicRepos, userData.Followers, userData.Following, userData.FetchedAt).WillReturnResult(sqlmock.NewResult(1, 1))
+	`).WithArgs(userData.Username, userData.Username, userData.Name, userData.Company, userData.Location, userData.Bio, userData.PublicRepos, userData.Followers, userData.Following, userData.FetchedAt).WillReturnResult(sqlmock.NewResult(1, 1))
 
 	mock.ExpectExec(`
 	insert into github_data.repositories (github_id, owner_username_normalized, pushed_at, updated_at, language, stars_count, is_fork, forks_count)
-	values ($1, $2, $3, $4, $5, $6, $7, $8), ($9, $10, $11, $12, $13, $14, $15, $16)
+	values ($1, lower($2), $3, $4, $5, $6, $7, $8), ($9, lower($10), $11, $12, $13, $14, $15, $16)
 	on conflict (github_id) do update set
 		owner_username_normalized = excluded.owner_username_normalized,
 		pushed_at      = excluded.pushed_at,
@@ -74,7 +74,7 @@ func TestSaveUserDataSucess(t *testing.T) {
 		stars_count    = excluded.stars_count,
 		is_fork        = excluded.is_fork,
 		forks_count    = excluded.forks_count;
-	`).WithArgs(githubRepo1.ID, strings.ToLower(githubRepo1.OwnerUsername), githubRepo1.PushedAt, githubRepo1.UpdatedAt, githubRepo1.Language, githubRepo1.StarsCount, githubRepo1.Fork, githubRepo1.ForksCount, githubRepo2.ID, githubRepo2.OwnerUsername, githubRepo2.PushedAt, githubRepo2.UpdatedAt, githubRepo2.Language, githubRepo2.StarsCount, githubRepo2.Fork, githubRepo2.ForksCount).WillReturnResult(sqlmock.NewResult(1, 1))
+	`).WithArgs(githubRepo1.ID, githubRepo1.OwnerUsername, githubRepo1.PushedAt, githubRepo1.UpdatedAt, githubRepo1.Language, githubRepo1.StarsCount, githubRepo1.Fork, githubRepo1.ForksCount, githubRepo2.ID, githubRepo2.OwnerUsername, githubRepo2.PushedAt, githubRepo2.UpdatedAt, githubRepo2.Language, githubRepo2.StarsCount, githubRepo2.Fork, githubRepo2.ForksCount).WillReturnResult(sqlmock.NewResult(1, 1))
 
 	mock.ExpectExec(`
 		delete from github_data.repositories r
@@ -104,7 +104,7 @@ func TestSaveUserDataSucessNoRepos(t *testing.T) {
 
 	mock.ExpectExec(`
 	insert into github_data.users (username, username_normalized, name, company, location, bio, public_repos_count, followers_count, following_count, fetched_at)
-	values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+	values ($1, lower($2), $3, $4, $5, $6, $7, $8, $9, $10)
 	on conflict (username_normalized) do update set
 		username = EXCLUDED.username,
 		name = EXCLUDED.name,
