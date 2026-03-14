@@ -39,13 +39,14 @@ func (h *BannersHandler) Preview(rw http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, preview.ErrInvalidBannerType):
-			h.error(rw, http.StatusBadRequest, err.Error())
+			h.error(rw, http.StatusBadRequest, "invalid banner type")
 		case errors.Is(err, preview.ErrUserDoesntExist):
-			h.error(rw, http.StatusNotFound, err.Error())
+			h.error(rw, http.StatusNotFound, "user not found on github")
 		case errors.Is(err, preview.ErrInvalidInputs):
-			h.error(rw, http.StatusBadRequest, err.Error())
+			h.error(rw, http.StatusBadRequest, "invalid inputs")
 		case errors.Is(err, preview.ErrCantGetPreview):
-			h.error(rw, http.StatusInternalServerError, err.Error())
+			h.logger.Error("failed to get preview", "err", err, "source", fn)
+			h.error(rw, http.StatusInternalServerError, "can't get preview")
 		default:
 			h.logger.Warn("unhandled error from usecase", "source", fn, "err", err)
 			h.error(rw, http.StatusInternalServerError, "can't get preview")
@@ -80,15 +81,15 @@ func (h *BannersHandler) Create(rw http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, longterm.ErrUserDoesntExist):
-			h.error(rw, http.StatusNotFound, err.Error())
+			h.error(rw, http.StatusNotFound, "user doesn't exist")
 		case errors.Is(err, longterm.ErrInvalidBannerType):
-			h.error(rw, http.StatusBadRequest, err.Error())
+			h.error(rw, http.StatusBadRequest, "invalid banner type")
 		case errors.Is(err, longterm.ErrCantCreateBanner):
 			h.logger.Error("failed to create long-term banner", "source", fn, "err", err)
-			h.error(rw, http.StatusInternalServerError, "Failed to process banner creation request")
+			h.error(rw, http.StatusInternalServerError, "can't create banner")
 		default:
 			h.logger.Warn("unhandled error from usecase", "source", fn, "err", err)
-			h.error(rw, http.StatusInternalServerError, "Failed to process banner creation request")
+			h.error(rw, http.StatusInternalServerError, "can't create banner")
 		}
 		return
 	}

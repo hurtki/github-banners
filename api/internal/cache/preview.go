@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"strings"
 	"time"
 
 	"github.com/hurtki/github-banners/api/internal/domain"
@@ -26,8 +27,11 @@ func NewPreviewMemoryCache(ttl time.Duration) *PreviewMemoryCache {
 
 // Get gets rendered banner from cache and returns it
 // Second return is hash, that will be the same for same bannerInfo ( excluding FetchedAt field, for different FetchedAt fields it will be same, if other fields are the same)
-// Third return is found, if found is false, then banner pointer is nil ( but hash is valid )
+// Third return is found: if found is false -> banner pointer is nil ( but hash is valid )
+// It uses lower case of username in cache key, so hurtki and HURTKI as usernames are same
 func (c *PreviewMemoryCache) Get(bf domain.BannerInfo) (*domain.Banner, string, bool) {
+	bf.Username = strings.ToLower(bf.Username)
+
 	hashKey := c.hashCounter.Hash(bf)
 	if item, found := c.cache.Get(hashKey); found {
 		if banner, ok := item.(*domain.Banner); ok {

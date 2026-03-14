@@ -26,7 +26,15 @@ func (r *GithubDataPsgrRepo) upsertRepoBatch(ctx context.Context, tx *sql.Tx, ba
 	for _, repo := range batch {
 		tempPosArgs := []string{}
 		for j := i; j < i+8; j++ {
-			tempPosArgs = append(tempPosArgs, fmt.Sprintf("$%d", j))
+			// don't forget to use lower for OwnerUsername for normalization
+			// 1 (2) 3 4 5 6 7 8
+			// 9 (10) 11 12 13 14
+			// ...
+			if j%8 == 2 {
+				tempPosArgs = append(tempPosArgs, fmt.Sprintf("lower($%d)", j))
+			} else {
+				tempPosArgs = append(tempPosArgs, fmt.Sprintf("$%d", j))
+			}
 		}
 		posParams = append(posParams, fmt.Sprintf("(%s)", strings.Join(tempPosArgs, ", ")))
 		args = append(args,
@@ -43,10 +51,10 @@ func (r *GithubDataPsgrRepo) upsertRepoBatch(ctx context.Context, tx *sql.Tx, ba
 	}
 
 	query := fmt.Sprintf(`
-	insert into repositories (github_id, owner_username, pushed_at, updated_at, language, stars_count, is_fork, forks_count)
+	insert into github_data.repositories (github_id, owner_username_normalized, pushed_at, updated_at, language, stars_count, is_fork, forks_count)
 	values %s
 	on conflict (github_id) do update set
-		owner_username = excluded.owner_username,
+		owner_username_normalized = excluded.owner_username_normalized,
 		pushed_at      = excluded.pushed_at,
 		updated_at     = excluded.updated_at,
 		language       = excluded.language,

@@ -33,8 +33,8 @@ func (r *GithubDataPsgrRepo) GetUserData(ctx context.Context, username string) (
 	}()
 
 	row := tx.QueryRowContext(ctx, `
-	select username, name, company, location, bio, public_repos_count, followers_count, following_count, fetched_at from users
-	where username = $1;
+	select username, name, company, location, bio, public_repos_count, followers_count, following_count, fetched_at from github_data.users
+	where username_normalized = lower($1);
 	`, username)
 
 	data := domain.GithubUserData{}
@@ -46,8 +46,8 @@ func (r *GithubDataPsgrRepo) GetUserData(ctx context.Context, username string) (
 	}
 
 	rows, err := tx.QueryContext(ctx, `
-	select github_id, owner_username, pushed_at, updated_at, language, stars_count, is_fork, forks_count from repositories
-	where owner_username = $1;
+	select github_id, pushed_at, updated_at, language, stars_count, is_fork, forks_count from github_data.repositories
+	where owner_username_normalized = lower($1);
 	`, username)
 
 	if err != nil {
@@ -58,10 +58,11 @@ func (r *GithubDataPsgrRepo) GetUserData(ctx context.Context, username string) (
 
 	for rows.Next() {
 		githubRepo := domain.GithubRepository{}
-		err = rows.Scan(&githubRepo.ID, &githubRepo.OwnerUsername, &githubRepo.PushedAt, &githubRepo.UpdatedAt, &githubRepo.Language, &githubRepo.StarsCount, &githubRepo.Fork, &githubRepo.ForksCount)
+		err = rows.Scan(&githubRepo.ID, &githubRepo.PushedAt, &githubRepo.UpdatedAt, &githubRepo.Language, &githubRepo.StarsCount, &githubRepo.Fork, &githubRepo.ForksCount)
 		if err != nil {
 			return domain.GithubUserData{}, r.handleError(err, fn+".scanRepositoryRow")
 		}
+		githubRepo.OwnerUsername = data.Username
 		githubRepos = append(githubRepos, githubRepo)
 	}
 
