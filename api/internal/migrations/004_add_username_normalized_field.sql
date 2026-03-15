@@ -92,14 +92,16 @@ set schema github_data;
 -- +goose Down
 -- drop foreign key from repositories
 alter table github_data.repositories
-drop constraint fk_respository_owner;
+drop constraint fk_repository_owner;
 
 -- revert owner_username_normalized back to owner_username
 alter table github_data.repositories
 add column owner_username text;
 
-update github_data.repositories
-set owner_username = owner_username_normalized;
+update github_data.repositories r
+set owner_username = u.username
+from github_data.users u
+where r.owner_username_normalized = u.username_normalized;
 
 drop index if exists idx_repositories_owner_username;
 create index idx_repositories_owner_username on github_data.repositories(owner_username);
