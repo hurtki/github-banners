@@ -43,7 +43,8 @@ func NewDB(conf *config.PostgresConfig, logger logger.Logger) (*sql.DB, error) {
 			continue
 		}
 
-		if err := db.Ping(); err != nil {
+		err = db.Ping()
+		if err != nil {
 			logger.Warn(fmt.Sprintf("Cannot ping database, try number: %d/%d", i+1, dataBaseConnectionTriesCount), "source", fn, "err", err)
 			db.Close()
 			time.Sleep(retryTimeBetweenTries)
