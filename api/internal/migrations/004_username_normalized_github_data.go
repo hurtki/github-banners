@@ -1,15 +1,23 @@
--- +goose Up
+package migrations
 
+import (
+	"context"
+	"database/sql"
+
+	"github.com/hurtki/github-banners/api/internal/domain"
+	"github.com/pressly/goose/v3"
+)
+
+func init() {
+	goose.AddMigrationContext(upUsernameNormalizedGithubData, downUsernameNormalizedGithubData)
+}
+
+func upUsernameNormalizedGithubData(ctx context.Context, tx *sql.Tx) error {
+	_, err := tx.ExecContext(ctx, `
 -- deleting foreign key constraint from repositories table
 -- to escape conflicts, because now we will change users table
 alter table repositories
 drop constraint fk_repository_owner;
-
--- FIELD username_normalized for github data users table
-delete from users a
-using users b
-where lower(a.username) = lower(b.username)
-and a.ctid > b.ctid;
 
 alter table users
 drop constraint users_pkey;
@@ -18,9 +26,21 @@ drop index if exists idx_users_username;
 
 alter table users
 add column username_normalized text;
+`)
+	if err != nil {
+		return err
+	}
 
-update users
-set username_normalized = lower(username);
+	err = normalizeStringRow(ctx, tx, "users", "username", "username_normalized", domain.NormalizeGithubUsername)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.ExecContext(ctx, `
+delete from users a
+using users b
+where a.username_normalized = b.username_normalized
+and a.ctid > b.ctid;
 
 alter table users
 alter column username_normalized set not null;
@@ -45,10 +65,14 @@ username text not null
 -- normalize repositories table
 alter table repositories
 add column owner_username_normalized text;
+`)
 
-update repositories
-set owner_username_normalized = lower(owner_username);
+	err = normalizeStringRow(ctx, tx, "repositories", "owner_username", "owner_username_normalized", domain.NormalizeGithubUsername)
+	if err != nil {
+		return err
+	}
 
+	_, err = tx.ExecContext(ctx, `
 -- now delete ownwer_username column
 -- real username should be stored in users table, repositories table can't contain this
 drop index if exists idx_repositories_owner_username;
@@ -75,7 +99,6 @@ owner_username_normalized text not null
 fk constraint
 */
 
-
 -- create schema for better separation of gihub data and our service data
 -- cause right now "users"
 create schema github_data;
@@ -85,11 +108,12 @@ set schema github_data;
 
 alter table repositories
 set schema github_data;
+	`)
+	return err
+}
 
-
-
-
--- +goose Down
+func downUsernameNormalizedGithubData(ctx context.Context, tx *sql.Tx) error {
+	_, err := tx.ExecContext(ctx, `
 -- drop foreign key from repositories
 alter table github_data.repositories
 drop constraint fk_repository_owner;
@@ -141,3 +165,6 @@ set schema public;
 
 -- optional: drop schema github_data if empty
 -- drop schema github_data;
+ `)
+	return err
+}
