@@ -34,8 +34,8 @@ func (r *GithubDataPsgrRepo) GetUserData(ctx context.Context, username string) (
 
 	row := tx.QueryRowContext(ctx, `
 	select username, name, company, location, bio, public_repos_count, followers_count, following_count, fetched_at from github_data.users
-	where username_normalized = lower($1);
-	`, username)
+	where username_normalized = $1;
+	`, domain.NormalizeGithubUsername(username))
 
 	data := domain.GithubUserData{}
 
@@ -47,8 +47,8 @@ func (r *GithubDataPsgrRepo) GetUserData(ctx context.Context, username string) (
 
 	rows, err := tx.QueryContext(ctx, `
 	select github_id, pushed_at, updated_at, language, stars_count, is_fork, forks_count from github_data.repositories
-	where owner_username_normalized = lower($1);
-	`, username)
+	where owner_username_normalized = $1;
+	`, domain.NormalizeGithubUsername(username))
 
 	if err != nil {
 		return domain.GithubUserData{}, r.handleError(err, fn+".selectRepositoriesQuery")

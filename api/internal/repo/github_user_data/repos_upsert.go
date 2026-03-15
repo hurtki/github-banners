@@ -26,20 +26,12 @@ func (r *GithubDataPsgrRepo) upsertRepoBatch(ctx context.Context, tx *sql.Tx, ba
 	for _, repo := range batch {
 		tempPosArgs := []string{}
 		for j := i; j < i+8; j++ {
-			// don't forget to use lower for OwnerUsername for normalization
-			// 1 (2) 3 4 5 6 7 8
-			// 9 (10) 11 12 13 14
-			// ...
-			if j%8 == 2 {
-				tempPosArgs = append(tempPosArgs, fmt.Sprintf("lower($%d)", j))
-			} else {
-				tempPosArgs = append(tempPosArgs, fmt.Sprintf("$%d", j))
-			}
+			tempPosArgs = append(tempPosArgs, fmt.Sprintf("$%d", j))
 		}
 		posParams = append(posParams, fmt.Sprintf("(%s)", strings.Join(tempPosArgs, ", ")))
 		args = append(args,
 			repo.ID,
-			repo.OwnerUsername,
+			domain.NormalizeGithubUsername(repo.OwnerUsername),
 			repo.PushedAt,
 			repo.UpdatedAt,
 			repo.Language,

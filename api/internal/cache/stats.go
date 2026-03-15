@@ -1,9 +1,9 @@
 package cache
 
 import (
-	"strings"
 	"time"
 
+	"github.com/hurtki/github-banners/api/internal/domain"
 	userstats "github.com/hurtki/github-banners/api/internal/domain/user_stats"
 	"github.com/patrickmn/go-cache"
 )
@@ -21,7 +21,7 @@ func NewStatsMemoryCache(defaultTTL time.Duration) *StatsMemoryCache {
 }
 
 func (c *StatsMemoryCache) Get(username string) (*userstats.CachedStats, bool) {
-	normalizedUsername := strings.ToLower(username)
+	normalizedUsername := domain.NormalizeGithubUsername(username)
 
 	if item, found := c.cache.Get(normalizedUsername); found {
 		if stats, ok := item.(*userstats.CachedStats); ok {
@@ -32,7 +32,7 @@ func (c *StatsMemoryCache) Get(username string) (*userstats.CachedStats, bool) {
 }
 
 func (c *StatsMemoryCache) Set(username string, entry *userstats.CachedStats, ttl time.Duration) {
-	normalizedUsername := strings.ToLower(username)
+	normalizedUsername := domain.NormalizeGithubUsername(username)
 	c.cache.Set(normalizedUsername, entry, ttl)
 }
 

@@ -36,7 +36,7 @@ func (r *GithubDataPsgrRepo) SaveUserData(ctx context.Context, userData domain.G
 
 	_, err = tx.ExecContext(ctx, `
 	insert into github_data.users (username, username_normalized, name, company, location, bio, public_repos_count, followers_count, following_count, fetched_at)
-	values ($1, lower($2), $3, $4, $5, $6, $7, $8, $9, $10)
+	values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	on conflict (username_normalized) do update set
 		username = EXCLUDED.username,
 		name = EXCLUDED.name,
@@ -47,7 +47,7 @@ func (r *GithubDataPsgrRepo) SaveUserData(ctx context.Context, userData domain.G
 		followers_count = EXCLUDED.followers_count,
 		following_count = EXCLUDED.following_count,
 		fetched_at = EXCLUDED.fetched_at;
-	`, userData.Username, userData.Username, userData.Name, userData.Company, userData.Location, userData.Bio, userData.PublicRepos, userData.Followers, userData.Following, userData.FetchedAt)
+	`, userData.Username, domain.NormalizeGithubUsername(userData.Username), userData.Name, userData.Company, userData.Location, userData.Bio, userData.PublicRepos, userData.Followers, userData.Following, userData.FetchedAt)
 	if err != nil {
 		return r.handleError(err, fn+".insertUser")
 	}
@@ -56,8 +56,8 @@ func (r *GithubDataPsgrRepo) SaveUserData(ctx context.Context, userData domain.G
 	if len(userData.Repositories) == 0 {
 		_, err := tx.ExecContext(ctx, `
 		delete from github_data.repositories
-		where owner_username_normalized = lower($1);
-		`, userData.Username)
+		where owner_username_normalized = $1;
+		`, domain.NormalizeGithubUsername(userData.Username))
 
 		if err != nil {
 			return r.handleError(err, fn+".execDeleteAllRepositoriesFromUser")
@@ -98,7 +98,7 @@ func (r *GithubDataPsgrRepo) SaveUserData(ctx context.Context, userData domain.G
 	}
 
 	deleteArgs := make([]any, len(userData.Repositories)+1)
-	deleteArgs[0] = userData.Username
+	deleteArgs[0] = domain.NormalizeGithubUsername(userData.Username)
 	reposCount := len(userData.Repositories)
 
 	deletePosParams := make([]string, reposCount)
@@ -116,7 +116,7 @@ func (r *GithubDataPsgrRepo) SaveUserData(ctx context.Context, userData domain.G
 
 	deleteQuery := fmt.Sprintf(`
 		delete from github_data.repositories r
-		where r.owner_username_normalized = lower($1)
+		where r.owner_username_normalized = $1
 		and not exists (
 			select 1
 			from (values %s) as v(github_id)
