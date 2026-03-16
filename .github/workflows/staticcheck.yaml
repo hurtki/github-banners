@@ -1,0 +1,38 @@
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      GO111MODULE: on
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.25.5'
+          cache: false
+      - run: go env
+      # Formating checking
+      - name: Check gofmt
+        run: |
+          if [ -n "$(gofmt -s -l .)" ]; then
+            echo "Go files are not formatted. Run 'gofmt -s -w .' to fix."
+            exit 1
+          fi
+      # Running tests
+      - name: Run tests
+        run: |
+          cd api
+          go test -v ./... --count=1
+          cd ../renderer/
+          go test -v ./... --count=1
+          cd ../storage/
+          go test -v ./... --count=1
+          cd ..
+      # Spelling check
+      - name: Check spelling
+        run: |
+          curl -L -o ./install-misspell.sh https://git.io/misspell
+          sh ./install-misspell.sh
+          mv ./bin/misspell .
+          chmod +x ./misspell
+          ./misspell -source=auto -error .

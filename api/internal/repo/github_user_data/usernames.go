@@ -19,14 +19,14 @@ func (r *GithubDataPsgrRepo) GetAllUsernames(ctx context.Context) ([]string, err
 		username := ""
 		err := rows.Scan(&username)
 		if err != nil {
-			r.logger.Error("unexcpected error occured when scanning usernames", "source", fn, "err", err)
+			r.logger.Error("unexcpected error occurred when scanning usernames", "source", fn, "err", err)
 			return nil, r.handleError(err, fn+".scanUsername")
 		}
 		usernames = append(usernames, username)
 	}
 
 	if err := rows.Err(); err != nil {
-		r.logger.Error("unexcpected error occured after scanning usernames", "source", fn, "err", err)
+		r.logger.Error("unexcpected error occurred after scanning usernames", "source", fn, "err", err)
 		return nil, r.handleError(err, fn+".afterScanRowsError")
 	}
 

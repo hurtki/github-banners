@@ -32,7 +32,7 @@ func (f *Fetcher) acquireClient(ctx context.Context) *GithubClient {
 			rl, _, err := cl.Client.RateLimit.Get(ctx)
 			cancel()
 			if err != nil {
-				f.logger.Error("found client, that its Reset time is before Now(), error occured when getting its rate limit, skipping", "err", err, "source", fn)
+				f.logger.Error("found client, that its Reset time is before Now(), error occurred when getting its rate limit, skipping", "err", err, "source", fn)
 				continue
 			}
 			// after net call, we are having new source of truth

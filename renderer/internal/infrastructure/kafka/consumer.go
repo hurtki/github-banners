@@ -70,7 +70,7 @@ func (c *KafkaConsumerGroup) RegisterCGHandler(topics []string, handler sarama.C
 func (c *KafkaConsumerGroup) registerCGHandler(topics []string, handler sarama.ConsumerGroupHandler) {
 	err := c.cg.Consume(c.ctx, topics, handler)
 	if err != nil {
-		c.logger.Error("error occured, when registering consumer group handler", "err", err, "topics", topics)
+		c.logger.Error("error occurred, when registering consumer group handler", "err", err, "topics", topics)
 	}
 }
 
