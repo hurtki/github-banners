@@ -21,7 +21,7 @@ func (e ErrEmptyField) Error() string { return fmt.Sprintf("field %s should be n
 type ErrRepoInternal struct{ Note string }
 
 func (e ErrRepoInternal) Error() string {
-	return fmt.Sprintf("internal repo occured, note: %s", e.Note)
+	return fmt.Sprintf("internal repo occurred, note: %s", e.Note)
 }
 
 var (

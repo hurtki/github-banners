@@ -49,7 +49,7 @@ func (u *LTBannersUsecase) CreateBanner(ctx context.Context, in CreateBannerIn) 
 			bnrMeta.UrlPath = generateUrlPath(bnrMeta.Username, bnrMeta.BannerType)
 			bnrMeta.Active = true
 		case errors.As(err, &errRepoInternal):
-			// if db internal error occured, we won't go to next services
+			// if db internal error occurred, we won't go to next services
 			// because, then we could get same thing when saving a new banner and all the work will be useless
 			return CreateBannerOut{}, ErrCantCreateBanner
 		default:
