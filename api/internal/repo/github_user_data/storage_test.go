@@ -19,7 +19,7 @@ func (m LoggerMock) Warn(a string, b ...any)     {}
 func (m LoggerMock) Error(a string, b ...any)    {}
 func (m LoggerMock) With(a ...any) logger.Logger { return m }
 
-// helper for testing to create sql mock, create repoistory with it
+// helper for testing to create sql mock, create repository with it
 // checks sqlmock expectations
 func getMockAndRepo(t *testing.T) (sqlmock.Sqlmock, *GithubDataPsgrRepo) {
 	db, mock, _ := sqlmock.New(

@@ -64,7 +64,7 @@ func (h *BannerUpdateCGHandler) ConsumeClaim(session sarama.ConsumerGroupSession
 
 		for range h.cfg.EventsBatchSize {
 			select {
-			// if session context done, exiting immediatly
+			// if session context done, exiting immediately
 			case <-session.Context().Done():
 				cancel()
 				return nil

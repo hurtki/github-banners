@@ -133,7 +133,7 @@ func main() {
 	srv := server.New(cfg, router, logger)
 	srv.Start()
 
-	// gracefull shutdown
+	// graceful shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	<-quit

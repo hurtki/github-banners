@@ -13,7 +13,7 @@
 - **Application Layer** Workers/shedulers (`app/`)
   Define sheduling
 - **Infrastructure Layer**: External services domain uses through interfaces (`infrastructure/`)
-  "Helpers" for domain logic, doesn't contain any buisness logic of the service
+  "Helpers" for domain logic, doesn't contain any business logic of the service
 
 ### 2. Repository Pattern
 
@@ -50,7 +50,7 @@ These repositories use unified `internal/repo/errors.go` to let domain understan
 ### 7. Errors flow
 
 - Errors come from domain wrapped using errors from `errors.go` in usecase's package you are using
-- For example long-term usecase return errors wrapped with `internal/domain/long-term/errors.go` so handler can understand, what happend
+- For example long-term usecase return errors wrapped with `internal/domain/long-term/errors.go` so handler can understand, what happened
 - Important! errors can come with a lot of context, and if it's negative error, it's better to log it, cause it contains a lot of information about the source of error
 - But handlers shouldn't just call in as HTTP response err.Error() cause it can give out private service issues
 

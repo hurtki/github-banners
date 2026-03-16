@@ -27,7 +27,7 @@ func (r *GithubDataPsgrRepo) GetUserData(ctx context.Context, username string) (
 		if !committed {
 			rbErr := tx.Rollback()
 			if rbErr != nil {
-				r.logger.Error("error occured, when rolling back transaction", "err", rbErr, "source", fn)
+				r.logger.Error("error occurred, when rolling back transaction", "err", rbErr, "source", fn)
 			}
 		}
 	}()

@@ -29,7 +29,7 @@ func (r *GithubDataPsgrRepo) SaveUserData(ctx context.Context, userData domain.G
 		if !committed {
 			rbErr := tx.Rollback()
 			if rbErr != nil {
-				r.logger.Error("error occured, when rolling back transaction", "err", rbErr, "source", fn)
+				r.logger.Error("error occurred, when rolling back transaction", "err", rbErr, "source", fn)
 			}
 		}
 	}()

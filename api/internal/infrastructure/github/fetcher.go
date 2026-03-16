@@ -123,7 +123,7 @@ func (f *Fetcher) fetchRepositories(ctx context.Context, username string) ([]*gi
 	}
 
 	for {
-		// every page aquire a new client for one request
+		// every page acquire a new client for one request
 		cl := f.acquireClient(ctx)
 		if cl == nil {
 			f.logger.Warn("can't find available client for github api request")
