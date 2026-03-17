@@ -6,6 +6,8 @@ info:
 servers:
   - url: http://localhost:8080
     description: Local development server
+  - url: https://api.bnrs.dev
+    description: Public demo
 paths:
   /banners/preview:
     get:
@@ -142,15 +144,14 @@ components:
       type: object
       required:
         - username
-        - banner_type
+        - type
       properties:
         username:
           type: string
           description: GitHub username
           example: torvalds
-        banner_type:
+        type:
           type: string
           enum: [dark, default]
           description: Type of banner to create
           example: dark
-
