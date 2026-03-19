@@ -3,26 +3,24 @@ info:
   title: GitHub Banners API
   description: API for generating GitHub user statistics banners as SVG images
   version: 1.0.0
-
 servers:
   - url: http://localhost:8080
     description: Local development server
-
+  - url: https://api.bnrs.dev
+    description: Public demo
 paths:
-  /banners/preview/:
+  /banners/preview:
     get:
       summary: Get banner preview for a GitHub user
       description: |
         Generates and returns an SVG banner with GitHub user statistics.
-        
+
         The banner includes:
         - Total repositories count
         - Original vs forked repositories breakdown
         - Total stars received
         - Total forks
         - Top programming languages used
-        
-        Data is cached for performance (see caching strategy in docs).
       operationId: getBannerPreview
       parameters:
         - name: username
@@ -38,8 +36,8 @@ paths:
           description: Banner type
           schema:
             type: string
-            enum: [wide]
-            example: wide
+            enum: [dark, default]
+            example: dark
       responses:
         '200':
           description: Successfully generated banner
@@ -48,7 +46,7 @@ paths:
               schema:
                 type: string
                 format: binary
-              example: <svg xmlns="http://www.w3.org/2000/svg">...</svg>
+              example: '<svg xmlns="http://www.w3.org/2000/svg">...</svg>'
         '400':
           description: Invalid request parameters
           content:
@@ -68,27 +66,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-              example:
-                error: user doesn't exist
+              examples:
+                user_doesnt_exist:
+                  value:
+                    error: user doesn't exist
         '500':
           description: Internal server error or service unavailable
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-              example:
-                error: can't get preview
-
-  /banners/:
+              examples:
+                cant_get_preview:
+                  value:
+                    error: can't get preview
+  /banners:
     post:
       summary: Create a persistent banner
       description: |
         Creates a long-term stored banner for a GitHub user.
-        
-        **Note**: This endpoint is not yet implemented (returns 501).
-        Future implementation will:
+
         - Generate and store banner in storage service
-        - Return a persistent URL for embedding
+        - Return a relative URL for embedding
         - Support automatic refresh of stored banners
       operationId: createBanner
       requestBody:
@@ -98,13 +97,39 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateBannerRequest'
       responses:
-        '501':
-          description: Not implemented
+        '400':
+          description: Invalid request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              examples:
+                invalid_json:
+                  value:
+                    error: invalid json
+                invalid_banner_type:
+                  value:
+                    error: invalid banner type
+        '404':
+          description: Requested user doesn't exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                user_doesnt_exist:
+                  value:
+                    error: user doesn't exist
+        '500':
+          description: Server can't create banner due to internal issues
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                cant_create_banner:
+                  value:
+                    error: can't create banner
 components:
   schemas:
     ErrorResponse:
@@ -115,194 +140,18 @@ components:
         error:
           type: string
           description: Error message describing what went wrong
-
     CreateBannerRequest:
       type: object
       required:
         - username
-        - banner_type
+        - type
       properties:
         username:
           type: string
           description: GitHub username
           example: torvalds
-        banner_type:
+        type:
           type: string
-          enum: [wide]
+          enum: [dark, default]
           description: Type of banner to create
-          example: wide
-
-    BannerPreviewRequest:
-      type: object
-      description: Request sent to the renderer service
-      properties:
-        username:
-          type: string
-          example: torvalds
-        banner_type:
-          type: string
-          example: wide
-        total_repos:
-          type: integer
-          description: Total number of repositories
-          example: 42
-        original_repos:
-          type: integer
-          description: Number of original (non-forked) repositories
-          example: 35
-        forked_repos:
-          type: integer
-          description: Number of forked repositories
-          example: 7
-        total_stars:
-          type: integer
-          description: Total stars across all original repositories
-          example: 150000
-        total_forks:
-          type: integer
-          description: Total forks across all original repositories
-          example: 45000
-        languages:
-          type: object
-          description: Language name to repository count mapping
-          additionalProperties:
-            type: integer
-          example:
-            Go: 15
-            Python: 10
-            TypeScript: 8
-
-    GithubUserStats:
-      type: object
-      description: Calculated statistics for a GitHub user
-      properties:
-        totalRepos:
-          type: integer
-          description: Total number of repositories
-          example: 42
-        originalRepos:
-          type: integer
-          description: Number of original (non-forked) repositories
-          example: 35
-        forkedRepos:
-          type: integer
-          description: Number of forked repositories
-          example: 7
-        totalStars:
-          type: integer
-          description: Total stars received on original repositories
-          example: 150000
-        totalForks:
-          type: integer
-          description: Total forks of original repositories
-          example: 45000
-        languages:
-          type: object
-          description: Programming language to repository count
-          additionalProperties:
-            type: integer
-          example:
-            Go: 15
-            Python: 10
-
-    GithubBannerInfoEvent:
-      type: object
-      description: Kafka event for banner info (future use)
-      properties:
-        event_type:
-          type: string
-          example: github_banner_info_ready
-        event_version:
-          type: integer
-          example: 1
-        produced_at:
-          type: string
-          format: date-time
-        payload:
-          $ref: '#/components/schemas/BannerEventPayload'
-
-    BannerEventPayload:
-      type: object
-      description: Payload for banner Kafka events
-      properties:
-        username:
-          type: string
-          example: torvalds
-        banner_type:
-          type: string
-          example: wide
-        storage_path:
-          type: string
-          description: Path where banner is stored
-          example: /banners/torvalds/wide.svg
-        stats:
-          $ref: '#/components/schemas/GithubUserStats'
-        fetched_at:
-          type: string
-          format: date-time
-          description: When the data was fetched from GitHub
-
-    GithubRepository:
-      type: object
-      description: Repository data stored in database
-      properties:
-        id:
-          type: integer
-          format: int64
-          description: GitHub repository ID
-        owner_username:
-          type: string
-          description: Repository owner's GitHub username
-        pushed_at:
-          type: string
-          format: date-time
-          nullable: true
-        updated_at:
-          type: string
-          format: date-time
-          nullable: true
-        language:
-          type: string
-          nullable: true
-          description: Primary programming language
-        stars_count:
-          type: integer
-          description: Number of stars
-        forks_count:
-          type: integer
-          description: Number of forks
-        is_fork:
-          type: boolean
-          description: Whether this is a forked repository
-
-    GithubUserData:
-      type: object
-      description: Complete GitHub user data stored in database
-      properties:
-        username:
-          type: string
-        name:
-          type: string
-          nullable: true
-        company:
-          type: string
-          nullable: true
-        location:
-          type: string
-          nullable: true
-        bio:
-          type: string
-          nullable: true
-        public_repos:
-          type: integer
-        followers:
-          type: integer
-        following:
-          type: integer
-        repositories:
-          type: array
-          items:
-            $ref: '#/components/schemas/GithubRepository'
-        fetched_at:
-          type: string
-          format: date-time
+          example: dark

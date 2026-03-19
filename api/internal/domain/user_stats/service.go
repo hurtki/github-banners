@@ -26,23 +26,23 @@ func NewUserStatsService(repo GithubUserDataRepository, fetcher UserDataFetcher,
 func (s *UserStatsService) GetStats(ctx context.Context, username string) (domain.GithubUserStats, error) {
 	cached, found := s.cache.Get(username)
 	if found {
-		//fresh <10mins
+		// fresh <10mins
 		age := time.Since(cached.UpdatedAt)
 		if age <= SoftTTL {
 			return cached.Stats, nil
 		}
 
-		//stalte >10mins but <24 hours
+		// state >10mins but <24 hours
 		go func() {
-			bgCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			timeoutCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 			defer cancel()
-			_, _ = s.RecalculateAndSync(bgCtx, username)
+			_, _ = s.RecalculateAndSync(timeoutCtx, username)
 		}()
 		return cached.Stats, nil
 	}
 
-	//checking database if cache missed
-	dbData, err := s.repo.GetUserData(context.TODO(), username)
+	// checking database if cache missed
+	dbData, err := s.repo.GetUserData(ctx, username)
 	if err == nil {
 		stats := CalculateStats(dbData.Repositories)
 		stats.FetchedAt = dbData.FetchedAt
@@ -58,20 +58,20 @@ func (s *UserStatsService) GetStats(ctx context.Context, username string) (domai
 
 // fetch api -> save db -> calc stats -> write cache
 func (s *UserStatsService) RecalculateAndSync(ctx context.Context, username string) (domain.GithubUserStats, error) {
-	//fetching raw data from github
+	// fetching raw data from github
 	data, err := s.fetcher.FetchUserData(ctx, username)
 	if err != nil {
-		return domain.GithubUserStats{}, err
+		return domain.GithubUserStats{}, fmt.Errorf("can't fetch data for user: %w", err)
 	}
 
 	stats := CalculateStats(data.Repositories)
 	stats.FetchedAt = data.FetchedAt
-	//updating database with the new raw data
-	if err := s.repo.SaveUserData(context.TODO(), *data); err != nil {
+	// updating database with the new raw data
+	if err := s.repo.SaveUserData(ctx, *data); err != nil {
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			return domain.GithubUserStats{}, err
 		}
-		// TODO, we really need to somehow log that we can't save to database or so something with it
+		// TODO: refactor stats service, to get away from this wrong apporoach
 	}
 	s.cache.Set(username, &CachedStats{
 		Stats:     stats,

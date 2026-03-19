@@ -3,10 +3,13 @@ package cache
 import (
 	"time"
 
+	"github.com/hurtki/github-banners/api/internal/domain"
 	userstats "github.com/hurtki/github-banners/api/internal/domain/user_stats"
 	"github.com/patrickmn/go-cache"
 )
 
+// StatsMemoryCache is in memory cache for storing statistics for username
+// It uses lower case of username as cache key, so hurtki and HURTKI are same
 type StatsMemoryCache struct {
 	cache *cache.Cache
 }
@@ -18,7 +21,9 @@ func NewStatsMemoryCache(defaultTTL time.Duration) *StatsMemoryCache {
 }
 
 func (c *StatsMemoryCache) Get(username string) (*userstats.CachedStats, bool) {
-	if item, found := c.cache.Get(username); found {
+	normalizedUsername := domain.NormalizeGithubUsername(username)
+
+	if item, found := c.cache.Get(normalizedUsername); found {
 		if stats, ok := item.(*userstats.CachedStats); ok {
 			return stats, true
 		}
@@ -27,7 +32,8 @@ func (c *StatsMemoryCache) Get(username string) (*userstats.CachedStats, bool) {
 }
 
 func (c *StatsMemoryCache) Set(username string, entry *userstats.CachedStats, ttl time.Duration) {
-	c.cache.Set(username, entry, ttl)
+	normalizedUsername := domain.NormalizeGithubUsername(username)
+	c.cache.Set(normalizedUsername, entry, ttl)
 }
 
 func (c *StatsMemoryCache) Delete(username string) {
