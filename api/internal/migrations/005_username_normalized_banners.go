@@ -43,9 +43,9 @@ using banners b
 -- same lowered ( normalized username )
 where a.github_username_normalized = b.github_username_normalized
 -- same banner type
-and a.banner_type = b.banner_type;
+and a.banner_type = b.banner_type
 -- their ctids are different ( different rows )
-and a.ctid > b.ctid
+and a.ctid > b.ctid;
 
 alter table banners
 add constraint banners_github_username_normalized_banner_type_key unique (github_username_normalized, banner_type);
