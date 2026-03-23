@@ -1,0 +1,53 @@
+on:
+  push:
+    tags:
+      - '*'
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    environment: dockerhub-push
+    steps:
+      - name: Docker login
+        uses:
+          - docker/login-action@v2
+          - docker/setup-buildx-action@v2
+          - actions/checkout@v3
+        with:
+          username: hurtki
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+      - name: Docker build
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          docker buildx build --push -t hurtki/github-banners-api:${{ VERSION }} ./api/
+  renderer:
+    runs-on: ubuntu-latest
+    environment: dockerhub-push
+    steps:
+      - name: Docker login
+        uses:
+          - actions/checkout@v3
+          - docker/login-action@v2
+          - docker/setup-buildx-action@v2
+        with:
+          username: hurtki
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+      - name: Docker build
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          docker buildx build --push -t hurtki/github-banners-renderer:${{ VERSION }} ./renderer/
+  storage:
+    runs-on: ubuntu-latest
+    environment: dockerhub-push
+    steps:
+      - name: Docker login
+        uses:
+          - actions/checkout@v3
+          - docker/login-action@v2
+          - docker/setup-buildx-action@v2
+        with:
+          username: hurtki
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+      - name: Docker build
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          docker buildx build --push -t hurtki/github-banners-storage:${{ VERSION }} ./storage/
