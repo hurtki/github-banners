@@ -1,0 +1,141 @@
+openapi: 3.0.3
+info:
+  version: 1.0.0
+  title: GitHub Banners Renderer
+  description: Renderer service for rendering banners using ready data
+paths:
+  /preview:
+    post:
+      summary: Render banner using ready stats
+      description: |
+        Gets statistics for banner render and returns ready SVG image.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BannerInfoV1'
+            example:
+              username: "hurtki"
+              banner_type: "dark"
+              fetched_at: "2024-01-15T12:00:00Z"
+              stats:
+                total_repos: 42
+                original_repos: 30
+                forked_repos: 12
+                total_stars: 150
+                total_forks: 20
+                languages:
+                  Go: 18500
+                  Python: 4200
+                  TypeScript: 1100
+      responses:
+        '200':
+          description: Successfully rendered banner
+          content:
+            image/svg+xml:
+              schema:
+                type: string
+                format: binary
+              example: '<svg xmlns="http://www.w3.org/2000/svg">...</svg>'
+        '400':
+          description: Invalid request — bad JSON body, unknown banner type, or invalid username
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_body:
+                  summary: Malformed JSON
+                  value:
+                    error: "Invalid request body format"
+                invalid_username:
+                  summary: Invalid username
+                  value:
+                    error: "invalid username"
+                invalid_banner_type:
+                  summary: Unknown banner type
+                  value:
+                    error: "invalid banner type"
+        '500':
+          description: Internal server error during rendering
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Internal server error"
+components:
+  schemas:
+    BannerInfoV1:
+      type: object
+      required:
+        - username
+        - banner_type
+        - stats
+        - fetched_at
+      properties:
+        username:
+          type: string
+          description: GitHub username
+          example: "hurtki"
+        banner_type:
+          type: string
+          enum: ['dark', 'default']
+          description: Visual theme of the banner
+          example: "dark"
+        stats:
+          $ref: '#/components/schemas/StatsV1'
+        fetched_at:
+          type: string
+          format: date-time
+          description: Timestamp when the stats were fetched from GitHub
+          example: "2024-01-15T12:00:00Z"
+    StatsV1:
+      type: object
+      required:
+        - total_repos
+        - original_repos
+        - forked_repos
+        - total_stars
+        - total_forks
+        - languages
+      properties:
+        total_repos:
+          type: integer
+          description: Total number of repositories
+          example: 42
+        original_repos:
+          type: integer
+          description: Number of repositories created by the user (non-forks)
+          example: 30
+        forked_repos:
+          type: integer
+          description: Number of forked repositories
+          example: 12
+        total_stars:
+          type: integer
+          description: Total stars received across all repositories
+          example: 150
+        total_forks:
+          type: integer
+          description: Total forks received across all repositories
+          example: 20
+        languages:
+          type: object
+          description: Map of programming language name to total bytes of code
+          additionalProperties:
+            type: integer
+          example:
+            Go: 18500
+            Python: 4200
+            TypeScript: 1100
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Error message describing what went wrong
+          example: "Invalid request body format"

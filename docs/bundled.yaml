@@ -1,0 +1,179 @@
+openapi: 3.0.3
+info:
+  title: Github banners
+  version: 1.0.0
+paths:
+  /banners/preview:
+    get:
+      summary: Get banner preview for a GitHub user
+      description: |
+        Generates and returns an SVG banner with GitHub user statistics.
+
+        The banner includes:
+        - Total repositories count
+        - Original vs forked repositories breakdown
+        - Total stars received
+        - Total forks
+        - Top programming languages used
+      operationId: getBannerPreview
+      parameters:
+        - name: username
+          in: query
+          required: true
+          description: GitHub username
+          schema:
+            type: string
+            example: torvalds
+        - name: type
+          in: query
+          required: true
+          description: Banner type
+          schema:
+            type: string
+            enum:
+              - dark
+              - default
+            example: dark
+      responses:
+        '200':
+          description: Successfully generated banner
+          content:
+            image/svg+xml:
+              schema:
+                type: string
+                format: binary
+              example: <svg xmlns="http://www.w3.org/2000/svg">...</svg>
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_banner_type:
+                  value:
+                    error: invalid banner type
+                invalid_inputs:
+                  value:
+                    error: invalid inputs
+        '404':
+          description: User not found on GitHub
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                user_doesnt_exist:
+                  value:
+                    error: user doesn't exist
+        '500':
+          description: Internal server error or service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                cant_get_preview:
+                  value:
+                    error: can't get preview
+  /banners:
+    post:
+      summary: Create a persistent banner
+      description: |
+        Creates a long-term stored banner for a GitHub user.
+
+        - Generate and store banner in storage service
+        - Return a relative URL for embedding
+        - Support automatic refresh of stored banners
+      operationId: createBanner
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBannerRequest'
+      responses:
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_json:
+                  value:
+                    error: invalid json
+                invalid_banner_type:
+                  value:
+                    error: invalid banner type
+        '404':
+          description: Requested user doesn't exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                user_doesnt_exist:
+                  value:
+                    error: user doesn't exist
+        '500':
+          description: Server can't create banner due to internal issues
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                cant_create_banner:
+                  value:
+                    error: can't create banner
+  /banners/{filename}:
+    get:
+      summary: Get stored banner (SVG)
+      description: |
+        Returns a previously created banner from storage (served by nginx).
+
+        If banner is not found, default banner may be returned.
+      operationId: getStoredBanner
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          description: Banner file name without extension
+          schema:
+            type: string
+            example: torvalds-dark
+      responses:
+        '200':
+          description: SVG banner
+          content:
+            image/svg+xml:
+              schema:
+                type: string
+                format: binary
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Error message describing what went wrong
+    CreateBannerRequest:
+      type: object
+      required:
+        - username
+        - type
+      properties:
+        username:
+          type: string
+          description: GitHub username
+          example: torvalds
+        type:
+          type: string
+          enum:
+            - dark
+            - default
+          description: Type of banner to create
+          example: dark

@@ -1,0 +1,78 @@
+openapi: 3.0.3
+info:
+  version: 1.0.0
+  title: GitHub Banners storage
+  description: Renderer service for saving banner's data
+paths:
+  /banners:
+    post:
+      summary: Upload file into storage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveRequestV1'
+            examples:
+              save_banner:
+                summary: Example banner upload
+                value:
+                  url_path: "hurtki-dark"
+                  banner_info: "PHN2ZyBoZWlnaHQ9IjEwMCIgd2lkdGg9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8Y2lyY2xlIHI9IjQ1IiBjeD0iNTAiIGN5PSI1MCIgZmlsbD0icmVkIiAvPgo8L3N2Zz4g"
+                  banner_format: "svg"
+      responses:
+        '200':
+          description: saved successfully
+        '400':
+          description: invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_url_path:
+                  summary: url path in request cannot be used
+                  value:
+                    error: "invalid url path"
+                invalid_banner_format:
+                  summary: banner format in request is not supported
+                  value:
+                    error: "invalid banner format"
+        '500':
+          description: Server Internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "can't save banner"
+components:
+  schemas:
+    SaveRequestV1:
+      type: object
+      required:
+        - url_path
+        - banner_info
+        - banner_format
+      properties:
+        url_path:
+          type: string
+          description: unified path ( not os path ) / banner identificator
+          example: "hurtki-dark"
+        banner_info:
+          type: string
+          description: base 64 encoded bytes | banner data
+          example: PHN2ZyBoZWlnaHQ9IjEwMCIgd2lkdGg9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8Y2lyY2xlIHI9IjQ1IiBjeD0iNTAiIGN5PSI1MCIgZmlsbD0icmVkIiAvPgo8L3N2Zz4g
+        banner_format:
+          type: string
+          description: format of the banner
+          enum: ["svg"]
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Error message describing what went wrong
+          example: "Invalid request body format"

@@ -18,7 +18,7 @@ jobs:
             echo "Go files are not formatted. Run 'gofmt -s -w .' to fix."
             exit 1
           fi
-      # Running tests
+      # tests
       - name: Run tests
         run: |
           cd api
@@ -28,7 +28,7 @@ jobs:
           cd ../storage/
           go test -v ./... --count=1
           cd ..
-      # Spelling check
+      # Spelling
       - name: Check spelling
         run: |
           curl -L -o ./install-misspell.sh https://git.io/misspell
@@ -36,3 +36,9 @@ jobs:
           mv ./bin/misspell .
           chmod +x ./misspell
           ./misspell -source=auto -error .
+      # Global api description is bundled
+      - name: check api bundle
+        run: |
+          npm install -g @redocly/cli
+          redocly bundle docs/api.yaml -o docs/bundled.generated.yaml
+          git diff --exit-code docs/bundled.generated.yaml docs/bundled.yaml
