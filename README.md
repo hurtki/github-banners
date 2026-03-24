@@ -10,6 +10,11 @@
 
 A high-performance backend service that generates dynamic banners displaying GitHub user statistics. Perfect for enhancing your GitHub profile README with real-time stats.
 
+<p align="center">
+  <img width="350" src="https://api.bnrs.dev/banners/elastic-dark?a=sgt0m9" />
+  <img width="350" src="https://api.bnrs.dev/banners/torvalds-default?a=ie3e7q" />
+</p>
+
 ## Overview
 
 GitHub Banners fetches user data from the GitHub API, calculates aggregated statistics (repositories, stars, forks, languages), and renders beautiful SVG banners that automatically update.
@@ -48,8 +53,7 @@ GitHub Banners fetches user data from the GitHub API, calculates aggregated stat
 ---
 
 ## Architecture
-
-- updated architecture pic
+![](https://github.com/user-attachments/assets/41a7b574-3151-4fb8-9cd1-57caa630b88c)
 
 ### Github Stats Caching Strategy
 
@@ -91,6 +95,7 @@ cd github-banners
 
 > Use `.env.example` that lay in every folder
 
+
 - Root `.env`
 - `api/.env`
 - `renderer/.env`
@@ -98,7 +103,7 @@ cd github-banners
 
 **3. Start services**
 
-> "dev" mode, 80 port without https
+### Dev mode, 80 port without https
 
 ```bash
 docker compose up --build
@@ -106,13 +111,17 @@ docker compose up --build
 docker compose up --build -d
 ```
 
-> "prod" mode, 443 port ( for cloudflare only )
+#### Production mode, 443 port ( for cloudflare only )
 
 Cloudflare configuration:
--pic
+
+![telegram-cloud-photo-size-4-5915536458141862905-y](https://github.com/user-attachments/assets/999e1068-c555-4242-b78f-cc11d65f6de3)
+
 
 Where to get cert and key:
--pic
+
+![telegram-cloud-photo-size-4-5915536458141862904-m](https://github.com/user-attachments/assets/abd524e5-4cfa-468c-8e3c-4537b9d45d94)
+
 
 Put certificate `cert.pem` and private key `key.pem` to `/etc/nginx/ssl/`
 
