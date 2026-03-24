@@ -62,7 +62,7 @@ services:
       # key + cert
       - /etc/nginx/ssl:/etc/nginx/ssl:ro
     ports:
-      - 80:80
+      - 443:443
     networks:
       - banners-net
     depends_on:
