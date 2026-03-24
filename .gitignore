@@ -14,3 +14,4 @@ go.work.sum
 
 api/renderer_impl.go
 api/storage_impl.go
+nginx/default.svg

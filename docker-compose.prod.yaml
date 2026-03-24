@@ -1,7 +1,8 @@
 services:
   # api service
   api:
-    build: ./api/
+    image: hurtki/github-banners-api:${VER:?VER is required}
+    platform: linux/amd64
     container_name: api
     restart: always
     env_file: ./api/.env
@@ -28,7 +29,8 @@ services:
       - pgdata:/var/lib/postgresql/data
   # one instance of rendere service
   renderer:
-    build: ./renderer/
+    image: hurtki/github-banners-renderer:${VER:?VER is required}
+    platform: linux/amd64
     env_file: ./renderer/.env
     container_name: renderer
     environment:
@@ -42,7 +44,8 @@ services:
         condition: service_healthy
   # storage service
   storage:
-    build: ./storage/
+    image: hurtki/github-banners-storage:${VER:?VER is required}
+    platform: linux/amd64
     container_name: storage
     volumes:
       - banners-storage:/var/www/banners
@@ -52,10 +55,12 @@ services:
   nginx:
     build:
       context: ./nginx/
-      dockerfile: Dockerfile.dev
+      dockerfile: ./nginx/Dockerfile.prod
     container_name: nginx
     volumes:
       - banners-storage:/var/www/banners:ro
+      # key + cert
+      - /etc/nginx/ssl:/etc/nginx/ssl:ro
     ports:
       - 80:80
     networks:
