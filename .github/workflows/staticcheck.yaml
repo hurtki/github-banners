@@ -40,5 +40,5 @@ jobs:
       - name: check api bundle
         run: |
           npm install -g @redocly/cli
-          redocly bundle docs/openapi.yaml -o docs/openapi.bundle.generated.yaml
-          git diff --exit-code docs/openapi.bundle.generated.yaml docs/openapi.bundle.yaml
+          redocly bundle docs/api.yaml -o docs/bundled.generated.yaml
+          git diff --exit-code docs/bundled.generated.yaml docs/bundled.yaml
