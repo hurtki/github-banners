@@ -1,0 +1,39 @@
+openapi: 3.0.3
+info:
+  title: Github banners
+  version: 1.0.0
+paths:
+  /banners/preview:
+    $ref: '../api/docs/api.yaml#/paths/~1banners~1preview'
+  /banners:
+    $ref: '../api/docs/api.yaml#/paths/~1banners'
+  /banners/{filename}:
+    get:
+      summary: Get stored banner (SVG)
+      description: |
+        Returns a previously created banner from storage (served by nginx).
+
+        If banner is not found, default banner may be returned.
+      operationId: getStoredBanner
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          description: Banner file name without extension
+          schema:
+            type: string
+            example: torvalds-dark
+      responses:
+        '200':
+          description: SVG banner
+          content:
+            image/svg+xml:
+              schema:
+                type: string
+                format: binary
+components:
+  schemas:
+    ErrorResponse:
+      $ref: '../api/docs/api.yaml#/components/schemas/ErrorResponse'
+    CreateBannerRequest:
+      $ref: '../api/docs/api.yaml#/components/schemas/CreateBannerRequest'

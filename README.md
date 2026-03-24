@@ -49,7 +49,7 @@ GitHub Banners fetches user data from the GitHub API, calculates aggregated stat
 
 ## Architecture
 
-<img width="1679" height="856" alt="image" src="https://github.com/user-attachments/assets/dfb60c1c-c3f2-4ff2-bacb-f51008c8e9bd" />
+- updated architecture pic
 
 ### Github Stats Caching Strategy
 
@@ -62,11 +62,11 @@ GitHub Banners fetches user data from the GitHub API, calculates aggregated stat
 
 ### Database Schema
 
-| Table          | Description                             |
-| -------------- | --------------------------------------- |
-| `banners`      | Banner configurations and storage paths |
-| `users`        | GitHub user profile data                |
-| `repositories` | Repository data linked to users         |
+| Table                      | Description                             |
+| -------------------------- | --------------------------------------- |
+| `banners`                  | Banner configurations and storage paths |
+| `github_data.users`        | GitHub user profile data                |
+| `github_data.repositories` | Repository data linked to users         |
 
 ---
 
@@ -89,127 +89,78 @@ cd github-banners
 
 **2. Configure environment variables**
 
-Root `.env`:
+> Use `.env.example` that lay in every folder
 
-```env
-API_INTERNAL_SERVER_PORT=80
-# Service authentication
-SERVICES_SECRET_KEY=your_secret_key
-```
-
-`api/.env`:
-
-```env
-# CORS
-CORS_ORIGINS=example.com,www.example.com
-
-# GitHub tokens (comma-separated for load balancing)
-GITHUB_TOKENS=ghp_token1,ghp_token2
-
-# Rate limiting & Cache
-RATE_LIMIT_RPS=10
-CACHE_TTL=5m
-REQUEST_TIMEOUT=10s
-
-# Logging
-LOG_LEVEL=DEBUG
-LOG_FORMAT=json
-
-# PostgreSQL
-POSTGRES_USER=github_banners
-POSTGRES_PASSWORD=your_secure_password
-POSTGRES_DB=github_banners
-DB_HOST=api-psgr
-PGPORT=5432
-```
-
-`renderer/.env`:
-
-```env
-# DEBUG/INFO/WARN/ERROR
-LOG_LEVEL=INFO
-# text/json
-LOG_FORMAT=json
-# separated by comma list of broker instances
-KAFKA_BROKERS_ADDRS=kafka:9092
-```
+- Root `.env`
+- `api/.env`
+- `renderer/.env`
+- `storage/.env`
 
 **3. Start services**
 
+> "dev" mode, 80 port without https
+
 ```bash
-docker-compose up --build
+docker compose up --build
 # Detached mode ( only build logs )
-docker-compose up --build -d
+docker compose up --build -d
 ```
+
+> "prod" mode, 443 port ( for cloudflare only )
+
+Cloudflare configuration:
+-pic
+
+Where to get cert and key:
+-pic
+
+Put certificate `cert.pem` and private key `key.pem` to `/etc/nginx/ssl/`
 
 ### Development
 
-```bash
-# Run locally
-cd api && go run main.go
+> For testing consider using "dev" version of docker compose
 
+```bash
 # Run tests
 ./run_tests.sh
+
+# CI static check:
+# fix formatting
+gofmt -s -w .
+# tests check
+./run_tests.sh
+# spelling ( go install github.com/client9/misspell/cmd/misspell@latest )
+# it will automatically fix all issues
+misspell -source=auto -w .
+# global api bundle ( only if you touched api.yaml files )
+# It will combine description of global api in `/docs/api.yaml`
+# into `bundled.yaml`
+# for install https://redocly.com/docs/cli/installation
+redocly bundle docs/api.yaml -o docs/bundled.yaml
 ```
 
 ---
 
 ## Services
 
-| Service    | Port             | Description              |
-| ---------- | ---------------- | ------------------------ |
-| `api`      | 80 ( public )    | Main API service         |
-| `api-psgr` | 5432 ( private ) | PostgreSQL database      |
-| `renderer` | -                | Banner rendering service |
-| `storage`  | -                | Banner storage service   |
-| `kafka`    | 9092 ( private ) | Apache Kafka broker      |
+| Service    | Port              | Description                  |
+| ---------- | ----------------- | ---------------------------- |
+| `nginx`    | 80/443 ( public ) | API gateway + static banners |
+| `api`      | 80                | Main API service             |
+| `api-psgr` | 5432              | PostgreSQL database          |
+| `renderer` | 80                | Banner rendering service     |
+| `storage`  | 80                | Banner storage service       |
+| `kafka`    | 9092              | Apache Kafka broker          |
 
 ---
 
 ## API Endpoints
 
-| Method | Endpoint                              | Description                                                    |
-| ------ | ------------------------------------- | -------------------------------------------------------------- |
-| `GET`  | `[api-service]/banners/preview`       | Get banner preview for a GitHub user ( not fully implemented ) |
-| `POST` | `[api-service]/banners`               | Create a new banner ( not implemented )                        |
-| `GET`  | `[storage-service]/{banner-url-path}` | Get long term banner ( not implemented )                       |
-
----
-
-## Project Structure
-
-```
-github-banners/
-├── api/                          # Main API service
-│   ├── internal/
-│   │   ├── app/user_stats/       # Background stats updating worker
-│   │   ├── cache/                # In-memory cache
-│   │   ├── config/               # Configuration
-│   │   ├── domain/               # Business logic
-│   │   │   ├── preview/          # Banner preview use case
-│   │   │   └── user_stats/       # Statistics service
-│   │   ├── handlers/             # HTTP handlers
-│   │   ├── infrastructure/       # External integrations
-│   │   │   ├── db/               # Database connection
-│   │   │   ├── github/           # GitHub API client pool
-│   │   │   ├── kafka/            # Kafka producer
-│   │   │   ├── renderer/         # Renderer client
-│   │   │   └── server/           # HTTP server
-│   │   ├── migrations/           # SQL migrations
-│   │   └── repo/                 # Storages
-│   │      ├── banners/           # long term banners storage
-│   │      ├── github_user_data/  # github data
-│   └── main.go
-├── renderer/                     # Banner rendering service ( partially implemented )
-│   ├── internal/
-│   │   ├── infrastructure/       # External integrations
-│   │   │   ├── kafka/            # kafka consumer group logic
-│   │   ├── handlers/       # Evevnts handling and HTTP requests handling logic
-│   └── main.go
-├── storage/                      # Banner storage service ( not implemented )
-├── docker-compose.yaml
-└── run_tests.sh
-```
+| Method | Endpoint             | Description                                                      |
+| ------ | -------------------- | ---------------------------------------------------------------- |
+| `GET`  | `/banners/preview`   | Get banner preview for a GitHub user                             |
+| `POST` | `/banners`           | Create a new lont-term banner                                    |
+| `GET`  | `/{banner-url-path}` | Get long term banner ( constantly updating since you created it) |
 
 ---
 
