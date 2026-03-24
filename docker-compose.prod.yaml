@@ -55,7 +55,7 @@ services:
   nginx:
     build:
       context: ./nginx/
-      dockerfile: ./nginx/Dockerfile.prod
+      dockerfile: ./Dockerfile.prod
     container_name: nginx
     volumes:
       - banners-storage:/var/www/banners:ro

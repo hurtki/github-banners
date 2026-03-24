@@ -52,7 +52,7 @@ services:
   nginx:
     build:
       context: ./nginx/
-      dockerfile: Dockerfile.dev
+      dockerfile: ./Dockerfile.dev
     container_name: nginx
     volumes:
       - banners-storage:/var/www/banners:ro
