@@ -34,7 +34,8 @@ func (s *UserStatsService) GetStats(ctx context.Context, username string) (domai
 
 		// state >10mins but <24 hours
 		go func() {
-			timeoutCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+			// usage of context.Background(), cause this operation is idependent of parent context
+			timeoutCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
 			_, _ = s.RecalculateAndSync(timeoutCtx, username)
 		}()
