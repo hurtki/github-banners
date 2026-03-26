@@ -72,11 +72,22 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            cd ~/deploy/github-banners/
+            cd ~/deploy/github-banners/api
+            export $(cat .env | grep -v '^#' | xargs)
+            cd ..
+
+            mkdir -p ~/backups/
+
+            PREV_TAG=$(git tag --sort=-creatordate | sed -n '2p' | sed 's/^v//')
+
+            docker exec -t postgres pg_dump -U $POSTGRES_USER $POSTGRES_DB > ~/backups/backup_$PREV_TAG.sql
+
             git checkout master
             git pull
             VER=$VERSION docker compose -f docker-compose.prod.yaml pull
             VER=$VERSION docker compose -f docker-compose.prod.yaml up -d --build
+            
+            sleep 5
   health-check:
     runs-on: ubuntu-latest
     needs: deploy
@@ -110,6 +121,19 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            cd ~/deploy/github-banners/
+            cd ~/deploy/github-banners/api
+            export $(cat .env | grep -v '^#' | xargs)
+            cd ..
+
+            git fetch --tags
+            git checkout v$PREV_VERSION
+            docker compose -f docker-compose.prod.yaml stop api renderer storage nginx kafka 
+
+
+            docker exec -i postgres psql -U $POSTGRES_USER -c "DROP DATABASE $POSTGRES_DB;"
+            docker exec -i postgres psql -U $POSTGRES_USER -c "CREATE DATABASE $POSTGRES_DB;"
+            docker exec -i postgres psql -U $POSTGRES_USER $POSTGRES_DB < ~/backups/backup_$PREV_VERSION.sql
+
+
             VER=$PREV_VERSION docker compose -f docker-compose.prod.yaml pull
             VER=$PREV_VERSION docker compose -f docker-compose.prod.yaml up -d --build
