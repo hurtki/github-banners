@@ -13,8 +13,6 @@ type Config struct {
 
 	GithubTokens []string
 
-	RateLimitRPS int
-
 	CacheTTL time.Duration
 
 	RequestTimeout time.Duration
@@ -45,7 +43,6 @@ func Load() *Config {
 		Port:            getEnv("PORT", "80"),
 		CORSOrigins:     corsOrigins,
 		GithubTokens:    githubTokens,
-		RateLimitRPS:    getEnvAsInt("RATE_LIMIT_RPS", 10),
 		CacheTTL:        getEnvAsDuration("CACHE_TTL", 5*time.Minute),
 		RequestTimeout:  getEnvAsDuration("REQUEST_TIMEOUT", 10*time.Second),
 		LogLevel:        getEnv("LOG_LEVEL", "info"),
