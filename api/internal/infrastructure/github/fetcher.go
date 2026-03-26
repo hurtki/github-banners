@@ -203,6 +203,7 @@ func (f *Fetcher) FetchUserData(ctx context.Context, username string) (*domain.G
 
 	return &domain.GithubUserData{
 		Username:     user.GetLogin(),
+		Bio:          user.Bio,
 		Name:         user.Name,
 		Company:      user.Company,
 		Location:     user.Location,

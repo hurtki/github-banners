@@ -73,6 +73,8 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             cd ~/deploy/github-banners/
+            git checkout master
+            git pull
             VER=$VERSION docker compose -f docker-compose.prod.yaml pull
             VER=$VERSION docker compose -f docker-compose.prod.yaml up -d --build
   health-check:

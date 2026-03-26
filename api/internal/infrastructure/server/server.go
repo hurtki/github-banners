@@ -29,7 +29,7 @@ func New(cfg *config.Config, handler http.Handler, logger log.Logger) *Server {
 			Addr:         fmt.Sprintf(":%s", cfg.Port),
 			Handler:      handler,
 			ReadTimeout:  10 * time.Second,
-			WriteTimeout: 30 * time.Second,
+			WriteTimeout: cfg.RequestTimeout,
 			IdleTimeout:  60 * time.Second,
 		},
 		logger: logger.With("service", "http-server"),
