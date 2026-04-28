@@ -53,6 +53,7 @@ GitHub Banners fetches user data from the GitHub API, calculates aggregated stat
 ---
 
 ## Architecture
+
 ![](https://github.com/user-attachments/assets/41a7b574-3151-4fb8-9cd1-57caa630b88c)
 
 ### Github Stats Caching Strategy
@@ -87,7 +88,7 @@ GitHub Banners fetches user data from the GitHub API, calculates aggregated stat
 **1. Clone the repository**
 
 ```bash
-git clone https://github.com/yourusername/github-banners.git
+git clone https://github.com/hurtki/github-banners.git
 cd github-banners
 ```
 
@@ -95,6 +96,11 @@ cd github-banners
 
 > Use `.env.example` that lay in every folder
 
+Oneliner ( some changes, like api tokens may be required )
+
+```
+cp .env.example .env ; cp ./api/.env.example ./api/.env ; cp ./renderer/.env.example ./renderer/.env ; cp ./storage/.env.example ./storage/.env
+```
 
 - Root `.env`
 - `api/.env`
@@ -107,7 +113,7 @@ cd github-banners
 
 ```bash
 docker compose up --build
-# Detached mode ( only build logs )
+# OR Detached mode ( only build logs )
 docker compose up --build -d
 ```
 
@@ -117,13 +123,22 @@ Cloudflare configuration:
 
 ![telegram-cloud-photo-size-4-5915536458141862905-y](https://github.com/user-attachments/assets/999e1068-c555-4242-b78f-cc11d65f6de3)
 
-
 Where to get cert and key:
 
 ![telegram-cloud-photo-size-4-5915536458141862904-m](https://github.com/user-attachments/assets/abd524e5-4cfa-468c-8e3c-4537b9d45d94)
 
-
 Put certificate `cert.pem` and private key `key.pem` to `/etc/nginx/ssl/`
+
+Docker compose
+
+```bash
+# production docker compose uses already built images from dockerhub
+# VER should be in "x.x.x" format
+# check images: https://hub.docker.com/repository/docker/hurtki/github-banners-api/tags
+
+export VER=$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')
+docker compose -f docker-compose.prod.yaml up -d
+```
 
 ### Development
 
