@@ -1,7 +1,10 @@
+# Auto-deploy disabled: VPS decommissioned. Manual-only for now.
 on:
-  push:
-    tags:
-      - 'v*.*.*'
+  workflow_dispatch:
+# on:
+#   push:
+#     tags:
+#       - 'v*.*.*'
 jobs:
   check-master:
     runs-on: ubuntu-latest
