@@ -10,11 +10,6 @@
 
 A high-performance backend service that generates dynamic banners displaying GitHub user statistics. Perfect for enhancing your GitHub profile README with real-time stats.
 
-<p align="center">
-  <img width="350" src="https://api.bnrs.dev/banners/elastic-dark?a=sgt0m9" />
-  <img width="350" src="https://api.bnrs.dev/banners/torvalds-default?a=ie3e7q" />
-</p>
-
 ## Overview
 
 GitHub Banners fetches user data from the GitHub API, calculates aggregated statistics (repositories, stars, forks, languages), and renders beautiful SVG banners that automatically update.
